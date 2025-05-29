@@ -104,37 +104,37 @@ const cancelEdit = () => {
         <draggable
             :list="column.tasks"
             group="tasks"
-            @change="log"
             ghost-class="ghost"
             item-key="id"
-            class="min-h-[50px]"
+            @change="log"
         >
           <template #item="{ element }">
-            <div v-if="editingTask && editingTask.id === element.id" class="bg-white p-2 mb-2 rounded shadow">
-              <input v-model="editingTask.title" class="w-full mb-2 p-1 border rounded" />
-              <textarea v-model="editingTask.description" class="w-full mb-2 p-1 border rounded" rows="2"></textarea>
-              <div class="flex justify-end">
-                <button @click="saveEdit(column.id)" class="bg-blue-500 text-white px-2 py-1 rounded mr-2">Save</button>
-                <button @click="cancelEdit" class="bg-gray-300 px-2 py-1 rounded">Cancel</button>
+            <div v-if="editingTask && editingTask.id === element.id" class="">
+              <UInput v-model="editingTask.title" class="w-full mb-2 p-1 border rounded"  variant="none" />
+<!--              <textarea v-model="editingTask.description" class="w-full mb-2 p-1 border rounded" rows="2"/>-->
+              <div class="flex">
+                <UButton class="bg-blue-500 text-white" @click="saveEdit(column.id)">Save</UButton>
+                <UButton class="bg-gray-300 px-2 py-1 rounded" @click="cancelEdit">Cancel</UButton>
               </div>
             </div>
-            <div v-else @click="startEditing(element)" class="bg-white p-2 mb-2 rounded shadow cursor-move">
+            <div v-else class="bg-white p-2 mb-2 rounded-lg cursor-move">
               <h3 class="font-semibold">{{ element.title }}</h3>
-              <p class="text-sm text-gray-600">{{ element.description }}</p>
+<!--              <p class="text-sm text-gray-600">{{ element.description }}</p>-->
             </div>
           </template>
         </draggable>
-        <div v-if="newTask.columnId === column.id" class="bg-white p-2 mb-2 rounded shadow">
-          <input v-model="newTask.title" placeholder="Enter task title" class="w-full mb-2 p-1 border rounded" />
-          <textarea v-model="newTask.description" placeholder="Enter task description" class="w-full mb-2 p-1 border rounded" rows="2"></textarea>
-          <div class="flex justify-end">
-            <button @click="saveNewTask" class="bg-blue-500 text-white px-2 py-1 rounded mr-2">Save</button>
-            <button @click="cancelNewTask" class="bg-gray-300 px-2 py-1 rounded">Cancel</button>
+        <div v-if="newTask.columnId === column.id">
+          <div class="bg-white rounded-lg p-2 mb-2">
+            <UInput v-model="newTask.title" variant="none" placeholder="Enter task title" class="" />
+          </div>
+          <div class="flex space-x-2 mt-4">
+            <UButton color="primary" @click="saveNewTask">Add task</UButton>
+            <UButton icon="i-lucide-x" size="xl" color="neutral" variant="soft" @click="cancelNewTask" />
           </div>
         </div>
-        <button v-else @click="startAddingTask(column.id)" class="mt-2 w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded">
+        <UButton v-else color="neutral" variant="soft" @click="startAddingTask(column.id)">
           + Add Task
-        </button>
+        </UButton>
       </div>
     </div>
   </div>
