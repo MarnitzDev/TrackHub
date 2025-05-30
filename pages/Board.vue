@@ -93,6 +93,32 @@ const saveEdit = (columnId: number) => {
 const cancelEdit = () => {
   editingTask.value = null
 }
+
+const newColumnTitle = ref('')
+const isAddingColumn = ref(false)
+
+const startAddingColumn = () => {
+  isAddingColumn.value = true
+  newColumnTitle.value = ''
+}
+
+const saveNewColumn = () => {
+  if (newColumnTitle.value.trim()) {
+    const newColumnId = Math.max(...columns.value.map(col => col.id)) + 1
+    columns.value.push({
+      id: newColumnId,
+      title: newColumnTitle.value.trim(),
+      tasks: []
+    })
+    isAddingColumn.value = false
+    newColumnTitle.value = ''
+  }
+}
+
+const cancelAddingColumn = () => {
+  isAddingColumn.value = false
+  newColumnTitle.value = ''
+}
 </script>
 
 <template>
@@ -136,6 +162,38 @@ const cancelEdit = () => {
           + Add Task
         </UButton>
       </div>
+
+      <!-- New Column Creation UI -->
+      <div v-if="isAddingColumn" class="bg-gray-100 p-4 rounded-lg w-64">
+        <UInput
+            v-model="newColumnTitle"
+            variant="none"
+            placeholder="Enter column title"
+            class="mb-2"
+        />
+        <div class="flex space-x-2 mt-4">
+          <UButton color="primary" @click="saveNewColumn">Add Column</UButton>
+          <UButton
+              icon="i-lucide-x"
+              size="xl"
+              color="neutral"
+              variant="soft"
+              @click="cancelAddingColumn"
+          />
+        </div>
+      </div>
+
+      <!-- Add Column Button -->
+      <UButton
+          v-else
+          color="neutral"
+          variant="soft"
+          class="h-fit"
+          @click="startAddingColumn"
+      >
+        + Add Column
+      </UButton>
+
     </div>
   </div>
 </template>
