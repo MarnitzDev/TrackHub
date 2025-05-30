@@ -72,7 +72,7 @@ const saveNewTask = () => {
       column.tasks.push({
         id: newTaskId,
         title: newTask.value.title.trim(),
-        description: newTask.value.description || 'No description'
+        description: newTask.value.description || ''
       })
     }
     newTask.value = { columnId: null, title: '', description: '' }
@@ -82,30 +82,6 @@ const saveNewTask = () => {
 // Function to cancel adding a new task
 const cancelNewTask = () => {
   newTask.value = { columnId: null, title: '', description: '' }
-}
-
-// Function to start editing an existing task
-const startEditing = (task: Task) => {
-  editingTask.value = { ...task }
-}
-
-// Function to save edits to an existing task
-const saveEdit = (columnId: number) => {
-  if (editingTask.value) {
-    const column = columns.value.find(col => col.id === columnId)
-    if (column) {
-      const taskIndex = column.tasks.findIndex(task => task.id === editingTask.value!.id)
-      if (taskIndex !== -1) {
-        column.tasks[taskIndex] = { ...editingTask.value }
-      }
-    }
-    editingTask.value = null
-  }
-}
-
-// Function to cancel editing a task
-const cancelEdit = () => {
-  editingTask.value = null
 }
 
 // State for new column creation
@@ -137,6 +113,36 @@ const cancelAddingColumn = () => {
   isAddingColumn.value = false
   newColumnTitle.value = ''
 }
+
+// Modal state and functions
+const isModalOpen = ref(false)
+const selectedTask = ref<Task | null>(null)
+const selectedColumnId = ref<number | null>(null)
+
+const openTaskModal = (task: Task, columnId: number) => {
+  selectedTask.value = { ...task }
+  selectedColumnId.value = columnId
+  isModalOpen.value = true
+}
+
+const closeTaskModal = () => {
+  isModalOpen.value = false
+  selectedTask.value = null
+  selectedColumnId.value = null
+}
+
+const saveTaskChanges = () => {
+  if (selectedTask.value && selectedColumnId.value !== null) {
+    const column = columns.value.find(col => col.id === selectedColumnId.value)
+    if (column) {
+      const taskIndex = column.tasks.findIndex(task => task.id === selectedTask.value!.id)
+      if (taskIndex !== -1) {
+        column.tasks[taskIndex] = { ...selectedTask.value }
+      }
+    }
+  }
+  closeTaskModal()
+}
 </script>
 
 <template>
@@ -156,7 +162,7 @@ const cancelAddingColumn = () => {
             <!-- Column header with drag handle -->
             <div class="flex items-center justify-between mb-2">
               <h2 class="font-bold">{{ column.title }}</h2>
-              <UButton icon="i-lucide-grip-vertical" color="gray" variant="ghost" class="cursor-move" />
+              <UButton icon="i-lucide-grip-vertical" color="neutral" variant="ghost" class="cursor-move" />
             </div>
             <!-- Draggable container for tasks -->
             <draggable
@@ -168,14 +174,7 @@ const cancelAddingColumn = () => {
             >
               <template #item="{ element: task }">
                 <div class="task-wrapper">
-                  <div v-if="editingTask && editingTask.id === task.id" class="bg-white p-2 mb-2 rounded-lg">
-                    <UInput v-model="editingTask.title" class="w-full mb-2" variant="none" placeholder="Task title" />
-                    <div class="flex justify-end space-x-2">
-                      <UButton color="primary" @click="saveEdit(column.id)">Save</UButton>
-                      <UButton color="gray" variant="soft" @click="cancelEdit">Cancel</UButton>
-                    </div>
-                  </div>
-                  <div v-else @click="startEditing(task)" class="bg-white p-2 mb-2 rounded-lg cursor-move">
+                  <div @click="openTaskModal(task, column.id)" class="bg-white p-2 mb-2 rounded-lg cursor-pointer">
                     <h3 class="font-semibold">{{ task.title }}</h3>
                   </div>
                 </div>
@@ -188,10 +187,10 @@ const cancelAddingColumn = () => {
               </div>
               <div class="flex space-x-2 mt-2">
                 <UButton color="primary" @click="saveNewTask">Add task</UButton>
-                <UButton icon="i-lucide-x" color="gray" variant="soft" @click="cancelNewTask" />
+                <UButton icon="i-lucide-x" color="neutral" variant="soft" @click="cancelNewTask" />
               </div>
             </div>
-            <UButton v-else color="gray" variant="soft" class="w-full mt-2" @click="startAddingTask(column.id)">
+            <UButton v-else color="neutral" variant="soft" class="w-full mt-2" @click="startAddingTask(column.id)">
               + Add Task
             </UButton>
           </div>
@@ -210,7 +209,7 @@ const cancelAddingColumn = () => {
           <UButton color="primary" @click="saveNewColumn">Add Column</UButton>
           <UButton
               icon="i-lucide-x"
-              color="gray"
+              color="neutral"
               variant="soft"
               @click="cancelAddingColumn"
           />
@@ -228,6 +227,46 @@ const cancelAddingColumn = () => {
         + Add Column
       </UButton>
     </div>
+
+    <!-- Task Modal -->
+    <UModal v-model:open="isModalOpen" :title="selectedTask?.title || 'Task Details'" prevent-close :ui="{ footer: 'justify-end' }">
+      <template #body>
+        <div v-if="selectedTask" class="space-y-4">
+          <div class="flex items-start space-x-3">
+            <UIcon name="i-lucide-edit" class="mt-1 flex-shrink-0" />
+            <div class="flex-grow">
+              <h4 class="font-medium mb-2">Title</h4>
+              <UInput
+                  v-model="selectedTask.title"
+                  placeholder="Task title"
+                  class="w-full"
+              />
+            </div>
+          </div>
+          <div class="flex items-start space-x-3">
+            <UIcon name="i-lucide-list" class="mt-1 flex-shrink-0" />
+            <div class="flex-grow">
+              <h4 class="font-medium mb-2">Description</h4>
+              <UTextarea
+                  v-model="selectedTask.description"
+                  placeholder="Add a more detailed description..."
+                  class="w-full"
+              />
+            </div>
+          </div>
+          <!-- Add more sections here (e.g., comments, attachments) -->
+        </div>
+      </template>
+
+      <template #footer="{ close }">
+        <UButton color="neutral" variant="soft" @click="closeTaskModal">
+          Close
+        </UButton>
+        <UButton color="primary" @click="saveTaskChanges">
+          Save Changes
+        </UButton>
+      </template>
+    </UModal>
   </div>
 </template>
 
