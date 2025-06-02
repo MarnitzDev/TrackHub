@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from '#imports'
+import { useRouter, useSupabaseClient } from '#imports'
 
 const router = useRouter()
+const supabase = useSupabaseClient()
 
 const items = [
   {
@@ -39,7 +40,19 @@ const toggleUserMenu = () => {
 }
 
 const goToLogin = () => {
-  router.push('/login')
+  router.push('/auth/login')
+}
+
+const signOut = async () => {
+  try {
+    await supabase.auth.signOut()
+    // Close the user menu
+    isUserMenuOpen.value = false
+    // Redirect to home page or login page after sign out
+    router.push('/')
+  } catch (error) {
+    console.error('Error signing out:', error)
+  }
 }
 </script>
 
@@ -80,6 +93,7 @@ const goToLogin = () => {
               class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
           >
             <button @click="goToLogin" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign in</button>
+            <button @click="signOut" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
           </div>
         </div>
       </div>
