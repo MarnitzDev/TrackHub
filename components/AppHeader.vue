@@ -1,40 +1,76 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useAuth, useRouter } from '#imports'
+
+const { status, data, signIn, signOut } = useAuth()
+const router = useRouter()
 
 const items = [
   {
     label: 'Dashboard',
-    icon: 'i-heroicons-home',
+    icon: 'i-lucide-home',
     to: '/'
   },
   {
     label: 'Board',
-    icon: 'i-lucide-book-open',
-    to: `/board`,
+    icon: 'i-lucide-layout-dashboard',
+    to: '/board',
   },
   {
     label: 'Projects',
-    icon: 'i-heroicons-rectangle-stack',
+    icon: 'i-lucide-folder',
     to: '/projects'
   },
   {
     label: 'Tasks',
-    icon: 'i-heroicons-clipboard-document-list',
+    icon: 'i-lucide-check-square',
     to: '/tasks'
   },
   {
     label: 'Team',
-    icon: 'i-heroicons-user-group',
+    icon: 'i-lucide-users',
     to: '/team'
   }
 ]
 
-const user = ref({
-  name: 'John Doe',
-  avatar: 'https://i.pravatar.cc/150?img=68'
+const isUserMenuOpen = ref(false)
+
+const isGuest = computed(() => {
+  return status.value === 'unauthenticated' && localStorage.getItem('guestMode') === 'true'
 })
 
-const isUserMenuOpen = ref(false)
+const userName = computed(() => {
+  if (status.value === 'authenticated') {
+    return data.value?.user?.name || 'Authenticated User'
+  } else if (isGuest.value) {
+    return 'Guest'
+  }
+  return 'Unknown User'
+})
+
+const userAvatar = computed(() => {
+  return data.value?.user?.image || 'https://www.gravatar.com/avatar/?d=mp'
+})
+
+const toggleUserMenu = () => {
+  isUserMenuOpen.value = !isUserMenuOpen.value
+}
+
+const handleSignIn = () => {
+  signIn('google')
+}
+
+const handleSignOut = () => {
+  signOut()
+  isUserMenuOpen.value = false
+  localStorage.removeItem('guestMode')
+  router.push('/login')
+}
+
+const switchToSignIn = () => {
+  localStorage.removeItem('guestMode')
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -53,32 +89,37 @@ const isUserMenuOpen = ref(false)
             :to="item.to"
             class="flex items-center px-3 py-2 rounded-md hover:bg-gray-100 transition duration-150 ease-in-out"
         >
-          <i :class="item.icon" class="mr-2 text-gray-500"></i>
+          <UIcon :name="item.icon" class="mr-2 text-gray-500" />
           <span>{{ item.label }}</span>
         </NuxtLink>
       </nav>
 
       <!-- User and Actions (Right) -->
       <div class="flex items-center space-x-4">
-        <button class="p-2 rounded-full hover:bg-gray-100 text-gray-500">
-          <i class="i-heroicons-bell-alert w-5 h-5"></i>
-        </button>
         <div class="relative">
           <button
-              @click="isUserMenuOpen = !isUserMenuOpen"
+              @click="toggleUserMenu"
               class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition duration-150 ease-in-out"
           >
-            <img :src="user.avatar" :alt="user.name" class="h-8 w-8 rounded-full">
-            <span class="hidden md:inline">{{ user.name }}</span>
-            <i class="i-heroicons-chevron-down w-4 h-4 text-gray-500"></i>
+            <img :src="userAvatar" :alt="userName" class="h-8 w-8 rounded-full">
+            <span class="hidden md:inline">{{ userName }}</span>
+            <UIcon name="i-lucide-chevron-down" class="w-4 h-4 text-gray-500" />
           </button>
           <div
               v-if="isUserMenuOpen"
               class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
           >
-            <NuxtLink to="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</NuxtLink>
-            <NuxtLink to="/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</NuxtLink>
-            <button class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
+            <template v-if="status === 'authenticated'">
+              <NuxtLink to="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</NuxtLink>
+              <NuxtLink to="/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</NuxtLink>
+              <button @click="handleSignOut" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
+            </template>
+            <template v-else-if="isGuest">
+              <button @click="switchToSignIn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Switch to Sign In</button>
+            </template>
+            <template v-else>
+              <button @click="handleSignIn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign in</button>
+            </template>
           </div>
         </div>
       </div>

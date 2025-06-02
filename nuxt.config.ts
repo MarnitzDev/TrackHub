@@ -12,6 +12,14 @@ export default defineNuxtConfig({
     '@nuxt/fonts',
     '@nuxt/icon',
     '@nuxt/ui',
-    '@nuxt/test-utils'
-  ]
+    '@nuxt/test-utils',
+    '@sidebase/nuxt-auth'
+  ],
+  auth: {
+    isEnabled: true,
+    origin: 'http://localhost:3000/api/auth/callback/google',
+    basePath: '/api/auth',
+    globalAppMiddleware: false,
+    signInPage: '/login',
+  }
 })
