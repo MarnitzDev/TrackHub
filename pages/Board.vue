@@ -1,31 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import draggable from 'vuedraggable'
-import { useAuth } from '#imports'
-
-const { status, data } = useAuth()
-
-const isGuest = computed(() => {
-  return status.value === 'unauthenticated' && localStorage.getItem('guestMode') === 'true'
-})
-
-const userName = computed(() => {
-  if (status.value === 'authenticated') {
-    return data.value?.user?.name || 'Authenticated User'
-  } else if (isGuest.value) {
-    return 'Guest'
-  }
-  return 'Unknown User'
-})
-
-// Redirect to login if not authenticated and not in guest mode
-if (process.client) {
-  watch(() => status.value, (newStatus) => {
-    if (newStatus === 'unauthenticated' && !isGuest.value) {
-      navigateTo('/login')
-    }
-  }, { immediate: true })
-}
 
 // We'll use a ref to hold the Quill module
 const QuillEditor = ref(null)
@@ -102,62 +77,31 @@ const startAddingTask = (columnId: number) => {
 
 // Function to save a new task
 const saveNewTask = () => {
-  // Validate input
-  if (!newTask.value.columnId) {
-    console.error('No column selected for new task')
+  if (!newTask.value.columnId || !newTask.value.title.trim()) {
+    console.error('Invalid task data')
     return
   }
 
-  if (!newTask.value.title.trim()) {
-    console.error('Task title cannot be empty')
+  const column = columns.value.find(col => col.id === newTask.value.columnId)
+  if (!column) {
+    console.error('Selected column not found')
     return
   }
 
-  try {
-    // Find the column
-    const column = columns.value.find(col => col.id === newTask.value.columnId)
-    if (!column) {
-      throw new Error('Selected column not found')
-    }
-
-    // Generate a new unique ID for the task
-    const newTaskId = Math.max(0, ...columns.value.flatMap(col => col.tasks.map(task => task.id))) + 1
-
-    // Create the new task
-    const taskToAdd = {
-      id: newTaskId,
-      title: newTask.value.title.trim(),
-      description: newTask.value.description.trim() || ''
-    }
-
-    // Add the task to the column
-    column.tasks.push(taskToAdd)
-
-    // Reset the new task form
-    newTask.value = { columnId: null, title: '', description: '' }
-
-    // Save the updated board state
-    if (status.value === 'authenticated') {
-      // TODO: Implement API call to save task for authenticated users
-      console.log('Saving new task for authenticated user:', taskToAdd)
-      // Example API call (replace with actual implementation):
-      // await saveTaskToAPI(taskToAdd)
-    } else {
-      // Save to local storage for guest users
-      localStorage.setItem('guestBoardData', JSON.stringify(columns.value))
-    }
-
-    console.log('New task added successfully:', taskToAdd)
-
-    // Optionally, you can emit an event or update some UI state to reflect the change
-    // For example:
-    // emit('taskAdded', taskToAdd)
-  } catch (error) {
-    console.error('Error adding new task:', error)
-    // Handle the error appropriately, e.g., show a notification to the user
-    // For example:
-    // showErrorNotification('Failed to add new task. Please try again.')
+  const newTaskId = Math.max(0, ...columns.value.flatMap(col => col.tasks.map(task => task.id))) + 1
+  const taskToAdd = {
+    id: newTaskId,
+    title: newTask.value.title.trim(),
+    description: newTask.value.description.trim() || ''
   }
+
+  column.tasks.push(taskToAdd)
+  newTask.value = { columnId: null, title: '', description: '' }
+
+  // Save to local storage
+  localStorage.setItem('boardData', JSON.stringify(columns.value))
+
+  console.log('New task added successfully:', taskToAdd)
 }
 
 // Function to cancel adding a new task
@@ -186,6 +130,9 @@ const saveNewColumn = () => {
     })
     isAddingColumn.value = false
     newColumnTitle.value = ''
+
+    // Save to local storage
+    localStorage.setItem('boardData', JSON.stringify(columns.value))
   }
 }
 
@@ -223,6 +170,9 @@ const saveTaskChanges = () => {
     }
   }
   closeTaskModal()
+
+  // Save to local storage
+  localStorage.setItem('boardData', JSON.stringify(columns.value))
 }
 
 // Quill Editor configuration
@@ -253,6 +203,14 @@ const updateTaskDescription = (value: string) => {
     selectedTask.value.description = value
   }
 }
+
+// Load board data from local storage on component mount
+onMounted(() => {
+  const savedBoardData = localStorage.getItem('boardData')
+  if (savedBoardData) {
+    columns.value = JSON.parse(savedBoardData)
+  }
+})
 </script>
 
 <template>

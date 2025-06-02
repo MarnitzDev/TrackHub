@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useAuth, useRouter } from '#imports'
+import { ref } from 'vue'
+import { useRouter } from '#imports'
 
-const { status, data, signIn, signOut } = useAuth()
 const router = useRouter()
 
 const items = [
@@ -35,40 +34,11 @@ const items = [
 
 const isUserMenuOpen = ref(false)
 
-const isGuest = computed(() => {
-  return status.value === 'unauthenticated' && localStorage.getItem('guestMode') === 'true'
-})
-
-const userName = computed(() => {
-  if (status.value === 'authenticated') {
-    return data.value?.user?.name || 'Authenticated User'
-  } else if (isGuest.value) {
-    return 'Guest'
-  }
-  return 'Unknown User'
-})
-
-const userAvatar = computed(() => {
-  return data.value?.user?.image || 'https://www.gravatar.com/avatar/?d=mp'
-})
-
 const toggleUserMenu = () => {
   isUserMenuOpen.value = !isUserMenuOpen.value
 }
 
-const handleSignIn = () => {
-  signIn('google')
-}
-
-const handleSignOut = () => {
-  signOut()
-  isUserMenuOpen.value = false
-  localStorage.removeItem('guestMode')
-  router.push('/login')
-}
-
-const switchToSignIn = () => {
-  localStorage.removeItem('guestMode')
+const goToLogin = () => {
   router.push('/login')
 }
 </script>
@@ -101,25 +71,15 @@ const switchToSignIn = () => {
               @click="toggleUserMenu"
               class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition duration-150 ease-in-out"
           >
-            <img :src="userAvatar" :alt="userName" class="h-8 w-8 rounded-full">
-            <span class="hidden md:inline">{{ userName }}</span>
+            <img src="https://www.gravatar.com/avatar/?d=mp" alt="User" class="h-8 w-8 rounded-full">
+            <span class="hidden md:inline">User</span>
             <UIcon name="i-lucide-chevron-down" class="w-4 h-4 text-gray-500" />
           </button>
           <div
               v-if="isUserMenuOpen"
               class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
           >
-            <template v-if="status === 'authenticated'">
-              <NuxtLink to="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</NuxtLink>
-              <NuxtLink to="/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</NuxtLink>
-              <button @click="handleSignOut" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
-            </template>
-            <template v-else-if="isGuest">
-              <button @click="switchToSignIn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Switch to Sign In</button>
-            </template>
-            <template v-else>
-              <button @click="handleSignIn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign in</button>
-            </template>
+            <button @click="goToLogin" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign in</button>
           </div>
         </div>
       </div>
