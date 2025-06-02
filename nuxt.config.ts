@@ -13,5 +13,15 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@nuxt/ui',
     '@nuxt/test-utils',
-  ]
+    '@nuxtjs/supabase',
+  ],
+  supabase: {
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_KEY,
+    redirectOptions: {
+      login: '/login',
+      callback: '/confirm',
+      exclude: ['/', '/board', '/projects', '/tasks', '/team'],
+    },
+  },
 })
