@@ -1,18 +1,14 @@
 <script setup>
-import { useRouter } from 'vue-router'
+import { onMounted } from 'vue'
+import { useRouter } from '#imports'
+import { useAuth } from '~/composables/useAuth'
 
 const router = useRouter()
+const { loadUser } = useAuth()
 
 onMounted(async () => {
-  const { error } = await useSupabaseClient().auth.getSession()
-  if (error) {
-    console.error('Authentication error:', error)
-    // Redirect to login page or show error
-    router.push('/auth/login')
-  } else {
-    // Redirect to a protected page or dashboard
-    router.push('/')
-  }
+  await loadUser()
+  router.push('/')
 })
 </script>
 

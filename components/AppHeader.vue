@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter, useSupabaseClient } from '#imports'
+import { ref, onMounted } from 'vue'
+import { useAuth } from '~/composables/useAuth'
 
-const router = useRouter()
-const supabase = useSupabaseClient()
+const { user, isAuthenticated, signIn, signOut, loadUser } = useAuth()
 
 const items = [
   {
@@ -39,21 +38,9 @@ const toggleUserMenu = () => {
   isUserMenuOpen.value = !isUserMenuOpen.value
 }
 
-const goToLogin = () => {
-  router.push('/auth/login')
-}
-
-const signOut = async () => {
-  try {
-    await supabase.auth.signOut()
-    // Close the user menu
-    isUserMenuOpen.value = false
-    // Redirect to home page or login page after sign out
-    router.push('/')
-  } catch (error) {
-    console.error('Error signing out:', error)
-  }
-}
+onMounted(() => {
+  loadUser()
+})
 </script>
 
 <template>
@@ -84,16 +71,39 @@ const signOut = async () => {
               @click="toggleUserMenu"
               class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition duration-150 ease-in-out"
           >
-            <img src="https://www.gravatar.com/avatar/?d=mp" alt="User" class="h-8 w-8 rounded-full">
-            <span class="hidden md:inline">User</span>
+            <img
+                :src="user?.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/?d=mp'"
+                alt="User"
+                class="h-8 w-8 rounded-full"
+            >
+            <span class="hidden md:inline">{{ user?.user_metadata?.full_name || 'User' }}</span>
             <UIcon name="i-lucide-chevron-down" class="w-4 h-4 text-gray-500" />
           </button>
           <div
               v-if="isUserMenuOpen"
               class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
           >
-            <button @click="goToLogin" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign in</button>
-            <button @click="signOut" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
+            <template v-if="isAuthenticated">
+              <NuxtLink
+                  to="/profile"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Profile
+              </NuxtLink>
+              <button
+                  @click="signOut"
+                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Sign out
+              </button>
+            </template>
+            <button
+                v-else
+                @click="signIn"
+                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Sign in
+            </button>
           </div>
         </div>
       </div>
