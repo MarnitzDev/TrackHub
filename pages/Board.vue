@@ -1,6 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import draggable from 'vuedraggable'
+
+// We'll use a ref to hold the Quill module
+const QuillEditor = ref(null)
+
+// Load Quill only on client-side
+onMounted(async () => {
+  if (process.client) {
+    const quillModule = await import('@vueup/vue-quill')
+    QuillEditor.value = quillModule.QuillEditor
+    await import('@vueup/vue-quill/dist/vue-quill.snow.css')
+  }
+})
 
 // Define interfaces for Task and Column
 interface Task {
@@ -143,6 +155,35 @@ const saveTaskChanges = () => {
   }
   closeTaskModal()
 }
+
+// Quill Editor configuration
+const quillOptions = ref({
+  theme: 'snow',
+  modules: {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      [{ 'header': 1 }, { 'header': 2 }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'script': 'sub'}, { 'script': 'super' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'direction': 'rtl' }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'font': [] }],
+      [{ 'align': [] }],
+      ['clean']
+    ],
+  }
+})
+
+// Function to update task description
+const updateTaskDescription = (value: string) => {
+  if (selectedTask.value) {
+    selectedTask.value.description = value
+  }
+}
 </script>
 
 <template>
@@ -247,11 +288,17 @@ const saveTaskChanges = () => {
             <UIcon name="i-lucide-list" class="mt-1 flex-shrink-0" />
             <div class="flex-grow">
               <h4 class="font-medium mb-2">Description</h4>
-              <UTextarea
-                  v-model="selectedTask.description"
-                  placeholder="Add a more detailed description..."
-                  class="w-full"
-              />
+              <ClientOnly>
+                <component
+                    :is="QuillEditor"
+                    v-if="QuillEditor"
+                    v-model:content="selectedTask.description"
+                    :options="quillOptions"
+                    contentType="html"
+                    @update:content="updateTaskDescription"
+                />
+                <p v-else>Loading editor...</p>
+              </ClientOnly>
             </div>
           </div>
           <!-- Add more sections here (e.g., comments, attachments) -->
@@ -283,5 +330,9 @@ const saveTaskChanges = () => {
 }
 .sortable-drag {
   opacity: 0.5;
+}
+/* Add some basic styling for Quill editor */
+:deep(.ql-container) {
+  min-height: 200px;
 }
 </style>
