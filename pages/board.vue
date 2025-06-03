@@ -79,6 +79,7 @@ const startAddingTask = (columnId: number) => {
 }
 
 // Function to save a new task
+
 const saveNewTask = async () => {
   if (!newTask.value.columnId || !newTask.value.title.trim()) {
     console.error('Invalid task data')
@@ -100,11 +101,23 @@ const saveNewTask = async () => {
     position: column.tasks.length
   }
 
+  // Clear the new task input immediately
+  const tempNewTask = { ...newTask.value }
+  newTask.value = { columnId: null, title: '', description: '' }
+
   const addedTask = await addTask(taskToAdd)
   if (addedTask) {
-    column.tasks.push(addedTask)
+    // Update the column tasks
+    const updatedColumn = columns.value.find(col => col.id === tempNewTask.columnId)
+    if (updatedColumn) {
+      updatedColumn.tasks = updatedColumn.tasks.filter(task => task.id !== addedTask.id)
+      updatedColumn.tasks.push(addedTask)
+    }
+  } else {
+    // If the task wasn't added successfully, revert the new task input
+    newTask.value = tempNewTask
+    console.error('Failed to add task')
   }
-  newTask.value = { columnId: null, title: '', description: '' }
 }
 
 // Function to cancel adding a new task
@@ -237,7 +250,7 @@ onMounted(() => {
                 :list="column.tasks"
                 group="tasks"
                 ghost-class="ghost"
-                item-key="id"
+                :item-key="task => task.id"
                 @change="log"
             >
               <template #item="{ element: task }">

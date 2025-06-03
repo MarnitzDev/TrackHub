@@ -56,11 +56,12 @@ export const useTasks = () => {
         }
     }
 
+
     const addTask = async (taskData: Omit<Task, 'id' | 'profile_id' | 'created_at' | 'updated_at'>) => {
         if (isUserGuest.value) {
             const newTask: Task = {
                 ...taskData,
-                id: Date.now().toString(), // Generate a temporary ID
+                id: `temp_${Date.now()}`,
                 profile_id: 'guest',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -95,8 +96,8 @@ export const useTasks = () => {
             tasks.value.push(data)
             return data
         } catch (e) {
-            error.value = 'Failed to add task'
             console.error('Error adding task:', e)
+            error.value = 'Failed to add task'
             return null
         } finally {
             loading.value = false
