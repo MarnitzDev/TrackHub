@@ -1,6 +1,7 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { useUserStore } from '~/stores/userStore'
+import { useAuth } from '~/composables/useAuth'
 
 interface Task {
     id?: string
@@ -17,11 +18,18 @@ interface Task {
 export const useTasks = () => {
     const supabase = useSupabaseClient()
     const userStore = useUserStore()
+    const { isUserGuest } = useAuth()
     const tasks = ref<Task[]>([])
     const loading = ref(false)
     const error = ref<string | null>(null)
+    const guestMessage = ref('')
 
     const fetchTasks = async () => {
+        if (isUserGuest.value) {
+            guestMessage.value = 'You are using guest mode. Tasks will not be saved.'
+            return
+        }
+
         if (!userStore.user) {
             error.value = 'User not authenticated'
             return
@@ -49,6 +57,19 @@ export const useTasks = () => {
     }
 
     const addTask = async (taskData: Omit<Task, 'id' | 'profile_id' | 'created_at' | 'updated_at'>) => {
+        if (isUserGuest.value) {
+            const newTask: Task = {
+                ...taskData,
+                id: Date.now().toString(), // Generate a temporary ID
+                profile_id: 'guest',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }
+            tasks.value.push(newTask)
+            guestMessage.value = 'Task added locally. Sign in to save your tasks.'
+            return newTask
+        }
+
         if (!userStore.user) {
             error.value = 'User not authenticated'
             return null
@@ -83,6 +104,15 @@ export const useTasks = () => {
     }
 
     const updateTask = async (taskId: string, updates: Partial<Omit<Task, 'id' | 'profile_id' | 'created_at' | 'updated_at'>>) => {
+        if (isUserGuest.value) {
+            const index = tasks.value.findIndex(t => t.id === taskId)
+            if (index !== -1) {
+                tasks.value[index] = { ...tasks.value[index], ...updates, updated_at: new Date().toISOString() }
+            }
+            guestMessage.value = 'Task updated locally. Sign in to save your changes.'
+            return tasks.value[index]
+        }
+
         if (!userStore.user) {
             error.value = 'User not authenticated'
             return null
@@ -118,6 +148,12 @@ export const useTasks = () => {
     }
 
     const deleteTask = async (taskId: string) => {
+        if (isUserGuest.value) {
+            tasks.value = tasks.value.filter(t => t.id !== taskId)
+            guestMessage.value = 'Task deleted locally. Sign in to save your changes.'
+            return true
+        }
+
         if (!userStore.user) {
             error.value = 'User not authenticated'
             return false
@@ -150,6 +186,7 @@ export const useTasks = () => {
         tasks,
         loading,
         error,
+        guestMessage,
         fetchTasks,
         addTask,
         updateTask,

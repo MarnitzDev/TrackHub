@@ -1,56 +1,63 @@
-import { ref, computed } from 'vue'
-import { useSupabaseClient, useRouter } from '#imports'
+import { computed } from 'vue'
 import { useUserStore } from '~/stores/userStore'
+import { useRouter } from 'vue-router'
+import { useSupabaseClient } from '#imports'
 
 export const useAuth = () => {
-    const supabase = useSupabaseClient()
-    const router = useRouter()
     const userStore = useUserStore()
-    const loading = ref(false)
+    const router = useRouter()
+    const supabase = useSupabaseClient()
 
     const user = computed(() => userStore.user)
     const isAuthenticated = computed(() => userStore.isAuthenticated)
+    const isUserGuest = computed(() => userStore.isGuest)
 
-    const loadUser = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser()
-            console.log('Loaded user:', user);
-            userStore.setUser(user)
-        } catch (error) {
-            console.error('Error loading user:', error)
-        }
-    }
-
-    const signIn = async () => {
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: `${window.location.origin}/auth/callback`
-                }
-            })
-            if (error) throw error
-        } catch (error) {
-            console.error('Error signing in:', error)
-        }
+    const signInWithGoogle = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`
+            }
+        })
+        if (error) console.error('Error signing in with Google:', error)
     }
 
     const signOut = async () => {
-        try {
-            await supabase.auth.signOut()
+        if (userStore.isGuest) {
             userStore.clearUser()
             router.push('/')
-        } catch (error) {
-            console.error('Error signing out:', error)
+        } else {
+            const { error } = await supabase.auth.signOut()
+            if (error) {
+                console.error('Error signing out:', error)
+            } else {
+                userStore.clearUser()
+                router.push('/')
+            }
+        }
+    }
+
+    const continueAsGuest = () => {
+        userStore.setGuest()
+        router.push('/board')
+    }
+
+    const loadUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+            userStore.setUser(user)
+        } else {
+            userStore.clearUser()
         }
     }
 
     return {
         user,
-        loading,
         isAuthenticated,
-        loadUser,
-        signIn,
-        signOut
+        isUserGuest,
+        signInWithGoogle,
+        signOut,
+        continueAsGuest,
+        loadUser
     }
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import draggable from 'vuedraggable'
+import { useAuth } from '~/composables/useAuth'
 import { useTasks } from '~/composables/useTasks'
 
 // We'll use a ref to hold the Quill module
@@ -15,8 +16,10 @@ onMounted(async () => {
   }
 })
 
+// Use the auth composable
+const { isUserGuest } = useAuth()
 // Use the tasks composable
-const { tasks, loading, error, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
+const { tasks, loading, error, guestMessage, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
 
 // Define interfaces for Task and Column
 interface Task {
@@ -208,6 +211,9 @@ onMounted(() => {
 <template>
   <div class="board">
     <h1 class="text-2xl font-bold mb-4">Project Board</h1>
+    <div v-if="isUserGuest" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+      <p>You are using guest mode. Your changes will not be saved. <UButton color="primary" @click="$router.push('/auth/login')">Sign in to save your work</UButton></p>
+    </div>
     <div v-if="loading">Loading tasks...</div>
     <div v-else-if="error">Error: {{ error }}</div>
     <div v-else class="flex space-x-4">

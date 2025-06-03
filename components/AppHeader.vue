@@ -3,12 +3,26 @@ import { ref, onMounted } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useUserStore } from '~/stores/userStore'
 
-const { user, isAuthenticated, signIn, signOut, loadUser } = useAuth()
+const { user, isAuthenticated, isUserGuest, signInWithGoogle, signOut, continueAsGuest, loadUser } = useAuth()
 const userStore = useUserStore()
 
 const userMetadata = computed(() => {
   console.log('Current user metadata:', userStore.userMetadata);
   return userStore.userMetadata;
+})
+
+const displayName = computed(() => {
+  if (isUserGuest.value) {
+    return 'Guest User'
+  }
+  return user.value?.user_metadata?.full_name
+})
+
+const avatarUrl = computed(() => {
+  if (isUserGuest.value) {
+    return '/guest-avatar.png'
+  }
+  return userMetadata.value?.avatar_url
 })
 
 const items = [
@@ -79,12 +93,17 @@ onMounted(() => {
               class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition duration-150 ease-in-out"
           >
             <img
-                v-if="userMetadata && userMetadata.avatar_url"
-                :src="userMetadata.avatar_url"
+                v-if="avatarUrl"
+                :src="avatarUrl"
                 alt="User"
                 class="h-8 w-8 rounded-full"
             >
-            <span class="hidden md:inline">{{ user?.user_metadata?.full_name || 'User' }}</span>
+            <UIcon
+                v-else
+                name="i-lucide-user"
+                class="h-8 w-8 p-1 bg-gray-200 rounded-full"
+            />
+            <span class="hidden md:inline">{{ displayName }}</span>
             <UIcon name="i-lucide-chevron-down" class="w-4 h-4 text-gray-500" />
           </button>
           <div
@@ -93,6 +112,7 @@ onMounted(() => {
           >
             <template v-if="isAuthenticated">
               <NuxtLink
+                  v-if="!isUserGuest"
                   to="/profile"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
@@ -105,13 +125,13 @@ onMounted(() => {
                 Sign out
               </button>
             </template>
-            <button
-                v-else
-                @click="signIn"
-                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            <NuxtLink
+                v-if="!isAuthenticated"
+                to="/auth/login"
+                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             >
-              Sign in
-            </button>
+              Sign In
+            </NuxtLink>
           </div>
         </div>
       </div>
