@@ -46,8 +46,6 @@ export const useAuth = () => {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
             userStore.setUser(user)
-        } else {
-            userStore.clearUser()
         }
     }
 

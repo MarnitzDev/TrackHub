@@ -2,6 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
+  ssr: false,
   css: [
     '~/assets/css/main.css'
   ],
@@ -15,7 +16,7 @@ export default defineNuxtConfig({
     '@nuxt/test-utils',
     '@nuxtjs/supabase',
     '@pinia/nuxt',
-    '@pinia-plugin-persistedstate/nuxt',
+    'pinia-plugin-persistedstate/nuxt',
   ],
   runtimeConfig: {
     public: {

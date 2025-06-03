@@ -15,7 +15,7 @@ const displayName = computed(() => {
   if (isUserGuest.value) {
     return 'Guest User'
   }
-  return user.value?.user_metadata?.full_name
+  return user.value?.user_metadata?.full_name || 'User'
 })
 
 const avatarUrl = computed(() => {
@@ -55,11 +55,22 @@ const items = [
 
 const isUserMenuOpen = ref(false)
 
+
 const toggleUserMenu = () => {
+  console.log('Toggling user menu. isUserGuest:', isUserGuest.value)
   isUserMenuOpen.value = !isUserMenuOpen.value
 }
 
+const handleSignOut = () => {
+  console.log('Handle sign out called. isUserGuest:', isUserGuest.value)
+  if (!isUserGuest.value) {
+    signOut()
+  }
+  isUserMenuOpen.value = false
+}
+
 onMounted(() => {
+  console.log('AppHeader mounted. Loading user...')
   loadUser()
 })
 </script>
@@ -110,7 +121,7 @@ onMounted(() => {
               v-if="isUserMenuOpen"
               class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
           >
-            <template v-if="isAuthenticated">
+            <template v-if="isAuthenticated || isUserGuest">
               <NuxtLink
                   v-if="!isUserGuest"
                   to="/profile"
@@ -119,14 +130,22 @@ onMounted(() => {
                 Profile
               </NuxtLink>
               <button
-                  @click="signOut"
+                  v-if="!isUserGuest"
+                  @click="handleSignOut"
                   class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
                 Sign out
               </button>
+              <NuxtLink
+                  v-if="isUserGuest"
+                  to="/auth/login"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Sign In
+              </NuxtLink>
             </template>
             <NuxtLink
-                v-if="!isAuthenticated"
+                v-if="!isAuthenticated && !isUserGuest"
                 to="/auth/login"
                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             >
