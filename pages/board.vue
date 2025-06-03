@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import draggable from 'vuedraggable'
+import { useTasks } from '~/composables/useTasks'
 
 // We'll use a ref to hold the Quill module
 const QuillEditor = ref(null)
@@ -14,11 +15,15 @@ onMounted(async () => {
   }
 })
 
+// Use the tasks composable
+const { tasks, loading, error, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
+
 // Define interfaces for Task and Column
 interface Task {
   id: number
   title: string
   description: string
+  status: string
 }
 
 interface Column {
@@ -27,35 +32,30 @@ interface Column {
   tasks: Task[]
 }
 
-// Initialize columns with some sample data
+// Initialize columns
 const columns = ref<Column[]>([
-  {
-    id: 1,
-    title: 'To Do',
-    tasks: [
-      { id: 1, title: 'Task 1', description: 'Description for Task 1' },
-      { id: 2, title: 'Task 2', description: 'Description for Task 2' },
-    ]
-  },
-  {
-    id: 2,
-    title: 'In Progress',
-    tasks: [
-      { id: 3, title: 'Task 3', description: 'Description for Task 3' },
-    ]
-  },
-  {
-    id: 3,
-    title: 'Done',
-    tasks: [
-      { id: 4, title: 'Task 4', description: 'Description for Task 4' },
-    ]
-  }
+  { id: 1, title: 'To Do', tasks: [] },
+  { id: 2, title: 'In Progress', tasks: [] },
+  { id: 3, title: 'Done', tasks: [] }
 ])
 
+// Watch for changes in tasks and update columns
+watch(tasks, (newTasks) => {
+  columns.value.forEach(column => {
+    column.tasks = newTasks.filter(task => task.status === column.title.toLowerCase().replace(' ', '_'))
+  })
+}, { deep: true })
+
 // Log changes in task and column order
-const log = (evt: any) => {
+const log = async (evt: any) => {
   console.log('Task change:', evt)
+  if (evt.added) {
+    const task = evt.added.element
+    const newStatus = columns.value.find(col => col.tasks.includes(task))?.title.toLowerCase().replace(' ', '_')
+    if (newStatus) {
+      await updateTask(task.id, { status: newStatus })
+    }
+  }
 }
 
 const logColumnChange = (evt: any) => {
@@ -76,7 +76,7 @@ const startAddingTask = (columnId: number) => {
 }
 
 // Function to save a new task
-const saveNewTask = () => {
+const saveNewTask = async () => {
   if (!newTask.value.columnId || !newTask.value.title.trim()) {
     console.error('Invalid task data')
     return
@@ -88,20 +88,20 @@ const saveNewTask = () => {
     return
   }
 
-  const newTaskId = Math.max(0, ...columns.value.flatMap(col => col.tasks.map(task => task.id))) + 1
+  const status = column.title.toLowerCase().replace(' ', '_')
   const taskToAdd = {
-    id: newTaskId,
     title: newTask.value.title.trim(),
-    description: newTask.value.description.trim() || ''
+    description: newTask.value.description.trim() || '',
+    status: status,
+    column_id: newTask.value.columnId,
+    position: column.tasks.length
   }
 
-  column.tasks.push(taskToAdd)
+  const addedTask = await addTask(taskToAdd)
+  if (addedTask) {
+    column.tasks.push(addedTask)
+  }
   newTask.value = { columnId: null, title: '', description: '' }
-
-  // Save to local storage
-  localStorage.setItem('boardData', JSON.stringify(columns.value))
-
-  console.log('New task added successfully:', taskToAdd)
 }
 
 // Function to cancel adding a new task
@@ -130,9 +130,6 @@ const saveNewColumn = () => {
     })
     isAddingColumn.value = false
     newColumnTitle.value = ''
-
-    // Save to local storage
-    localStorage.setItem('boardData', JSON.stringify(columns.value))
   }
 }
 
@@ -159,20 +156,18 @@ const closeTaskModal = () => {
   selectedColumnId.value = null
 }
 
-const saveTaskChanges = () => {
+const saveTaskChanges = async () => {
   if (selectedTask.value && selectedColumnId.value !== null) {
     const column = columns.value.find(col => col.id === selectedColumnId.value)
     if (column) {
-      const taskIndex = column.tasks.findIndex(task => task.id === selectedTask.value!.id)
-      if (taskIndex !== -1) {
-        column.tasks[taskIndex] = { ...selectedTask.value }
-      }
+      await updateTask(selectedTask.value.id, {
+        title: selectedTask.value.title,
+        description: selectedTask.value.description,
+        status: column.title.toLowerCase().replace(' ', '_')
+      })
     }
   }
   closeTaskModal()
-
-  // Save to local storage
-  localStorage.setItem('boardData', JSON.stringify(columns.value))
 }
 
 // Quill Editor configuration
@@ -204,19 +199,18 @@ const updateTaskDescription = (value: string) => {
   }
 }
 
-// Load board data from local storage on component mount
+// Fetch tasks on component mount
 onMounted(() => {
-  const savedBoardData = localStorage.getItem('boardData')
-  if (savedBoardData) {
-    columns.value = JSON.parse(savedBoardData)
-  }
+  fetchTasks()
 })
 </script>
 
 <template>
   <div class="board">
     <h1 class="text-2xl font-bold mb-4">Project Board</h1>
-    <div class="flex space-x-4">
+    <div v-if="loading">Loading tasks...</div>
+    <div v-else-if="error">Error: {{ error }}</div>
+    <div v-else class="flex space-x-4">
       <!-- Draggable container for columns -->
       <draggable
           v-model="columns"
@@ -248,6 +242,10 @@ onMounted(() => {
                 </div>
               </template>
             </draggable>
+            <!-- Message for empty column -->
+            <div v-if="column.tasks.length === 0" class="text-gray-500 text-sm italic mb-2">
+              No tasks in this column
+            </div>
             <!-- New task input or add task button -->
             <div v-if="newTask.columnId === column.id">
               <div class="bg-white rounded-lg p-2 mb-2">
