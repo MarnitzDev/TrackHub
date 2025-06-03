@@ -3,9 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { useAuth } from '~/composables/useAuth'
 import { useTasks } from '~/composables/useTasks'
-
-// We'll use a ref to hold the Quill module
-const QuillEditor = ref(null)
+import TaskEditor from '~/components/TaskEditor.vue'
 
 // Load Quill only on client-side
 onMounted(async () => {
@@ -161,7 +159,7 @@ const selectedTask = ref<Task | null>(null)
 const selectedColumnId = ref<number | null>(null)
 
 const openTaskModal = (task: Task, columnId: number) => {
-  selectedTask.value = { ...task }
+  selectedTask.value = JSON.parse(JSON.stringify(task))
   selectedColumnId.value = columnId
   isModalOpen.value = true
 }
@@ -185,28 +183,6 @@ const saveTaskChanges = async () => {
   }
   closeTaskModal()
 }
-
-// Quill Editor configuration
-const quillOptions = ref({
-  theme: 'snow',
-  modules: {
-    toolbar: [
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block'],
-      [{ 'header': 1 }, { 'header': 2 }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'script': 'sub'}, { 'script': 'super' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      [{ 'direction': 'rtl' }],
-      [{ 'size': ['small', false, 'large', 'huge'] }],
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'font': [] }],
-      [{ 'align': [] }],
-      ['clean']
-    ],
-  }
-})
 
 // Function to update task description
 const updateTaskDescription = (value: string) => {
@@ -235,8 +211,8 @@ onMounted(() => {
           v-model="columns"
           group="columns"
           item-key="id"
-          @change="logColumnChange"
           class="flex space-x-4"
+          @change="logColumnChange"
       >
         <template #item="{ element: column }">
           <div class="bg-gray-100 p-4 rounded-lg w-64">
@@ -332,20 +308,11 @@ onMounted(() => {
             <UIcon name="i-lucide-list" class="mt-1 flex-shrink-0" />
             <div class="flex-grow">
               <h4 class="font-medium mb-2">Description</h4>
-              <ClientOnly>
-                <component
-                    :is="QuillEditor"
-                    v-if="QuillEditor"
-                    v-model:content="selectedTask.description"
-                    :options="quillOptions"
-                    contentType="html"
-                    @update:content="updateTaskDescription"
-                />
-                <p v-else>Loading editor...</p>
-              </ClientOnly>
+              <TaskEditor
+                  v-model="selectedTask.description"
+              />
             </div>
           </div>
-          <!-- Add more sections here (e.g., comments, attachments) -->
         </div>
       </template>
 
