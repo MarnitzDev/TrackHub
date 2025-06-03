@@ -1,23 +1,23 @@
 import { ref, computed } from 'vue'
 import { useSupabaseClient, useRouter } from '#imports'
+import { useUserStore } from '~/stores/userStore'
 
 export const useAuth = () => {
     const supabase = useSupabaseClient()
     const router = useRouter()
-    const user = ref(null)
+    const userStore = useUserStore()
     const loading = ref(false)
 
-    const isAuthenticated = computed(() => !!user.value)
+    const user = computed(() => userStore.user)
+    const isAuthenticated = computed(() => userStore.isAuthenticated)
 
     const loadUser = async () => {
-        loading.value = true
         try {
-            const { data: { user: loadedUser } } = await supabase.auth.getUser()
-            user.value = loadedUser
+            const { data: { user } } = await supabase.auth.getUser()
+            console.log('Loaded user:', user);
+            userStore.setUser(user)
         } catch (error) {
             console.error('Error loading user:', error)
-        } finally {
-            loading.value = false
         }
     }
 
@@ -38,7 +38,7 @@ export const useAuth = () => {
     const signOut = async () => {
         try {
             await supabase.auth.signOut()
-            user.value = null
+            userStore.clearUser()
             router.push('/')
         } catch (error) {
             console.error('Error signing out:', error)

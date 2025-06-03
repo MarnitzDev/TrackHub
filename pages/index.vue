@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
+import { useUserStore } from '~/stores/userStore'
 
 const supabase = useSupabaseClient()
 const connectionStatus = ref('Checking connection...')
+const userStore = useUserStore()
+const isAuthenticated = computed(() => userStore.isAuthenticated)
+const userMetadata = computed(() => userStore.userMetadata)
 
 onMounted(async () => {
   try {
@@ -30,6 +34,8 @@ onMounted(async () => {
   <div>
     <h1>Supabase Connection Test</h1>
     <p>{{ connectionStatus }}</p>
+    <p>isAuthenticated: {{isAuthenticated}}</p>
+    <p>userMetadata: {{userMetadata}}</p>
   </div>
 </template>
 

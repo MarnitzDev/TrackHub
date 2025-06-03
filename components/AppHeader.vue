@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { useUserStore } from '~/stores/userStore'
 
 const { user, isAuthenticated, signIn, signOut, loadUser } = useAuth()
+const userStore = useUserStore()
+
+const userMetadata = computed(() => {
+  console.log('Current user metadata:', userStore.userMetadata);
+  return userStore.userMetadata;
+})
 
 const items = [
   {
@@ -72,7 +79,8 @@ onMounted(() => {
               class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition duration-150 ease-in-out"
           >
             <img
-                :src="user?.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/?d=mp'"
+                v-if="userMetadata && userMetadata.avatar_url"
+                :src="userMetadata.avatar_url"
                 alt="User"
                 class="h-8 w-8 rounded-full"
             >

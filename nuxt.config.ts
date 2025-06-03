@@ -14,6 +14,7 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@nuxt/test-utils',
     '@nuxtjs/supabase',
+    '@pinia/nuxt',
   ],
   supabase: {
     url: process.env.SUPABASE_URL,
