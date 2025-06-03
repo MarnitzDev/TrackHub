@@ -1,4 +1,8 @@
 <script setup lang="ts">
+definePageMeta({
+  layout: 'auth'
+})
+
 import { useAuth } from '~/composables/useAuth'
 
 const { signInWithGoogle, continueAsGuest } = useAuth()

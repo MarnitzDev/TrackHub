@@ -32,7 +32,7 @@ export const useAuth = () => {
                 console.error('Error signing out:', error)
             } else {
                 userStore.clearUser()
-                router.push('/')
+                router.push('/auth/login')
             }
         }
     }
