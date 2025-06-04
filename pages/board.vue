@@ -17,7 +17,7 @@ onMounted(async () => {
 // Use the auth composable
 const { isUserGuest } = useAuth()
 // Use the tasks composable
-const { tasks, loading, error, guestMessage, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
+const { tasks, loading, error, guestMessage, fetchTasks, addTask, updateTask, deleteTask, addColumn, columns, fetchColumns } = useTasks()
 
 // Define interfaces for Task and Column
 interface Task {
@@ -32,13 +32,6 @@ interface Column {
   title: string
   tasks: Task[]
 }
-
-// Initialize columns
-const columns = ref<Column[]>([
-  { id: 1, title: 'To Do', tasks: [] },
-  { id: 2, title: 'In Progress', tasks: [] },
-  { id: 3, title: 'Done', tasks: [] }
-])
 
 // Watch for changes in tasks and update columns
 watch(tasks, (newTasks) => {
@@ -134,16 +127,24 @@ const startAddingColumn = () => {
 }
 
 // Function to save a new column
-const saveNewColumn = () => {
+const saveNewColumn = async () => {
   if (newColumnTitle.value.trim()) {
-    const newColumnId = Math.max(...columns.value.map(col => col.id)) + 1
-    columns.value.push({
-      id: newColumnId,
+    const newColumnData = {
       title: newColumnTitle.value.trim(),
-      tasks: []
-    })
-    isAddingColumn.value = false
-    newColumnTitle.value = ''
+    }
+
+    const addedColumn = await addColumn(newColumnData)
+    if (addedColumn) {
+      columns.value.push({
+        id: addedColumn.id,
+        title: addedColumn.title,
+        tasks: []
+      })
+      isAddingColumn.value = false
+      newColumnTitle.value = ''
+    } else {
+      console.error('Failed to add column')
+    }
   }
 }
 
@@ -192,8 +193,9 @@ const updateTaskDescription = (value: string) => {
 }
 
 // Fetch tasks on component mount
-onMounted(() => {
-  fetchTasks()
+onMounted(async () => {
+  await fetchColumns()
+  await fetchTasks()
 })
 </script>
 
