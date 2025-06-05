@@ -4,7 +4,7 @@ import draggable from 'vuedraggable'
 import { useAuth } from '~/composables/useAuth'
 import { useTasks } from '~/composables/useTasks'
 import { useColumns } from '~/composables/useColumns'
-import TaskEditor from '~/components/TaskEditor.vue'
+import TaskModal from '~/components/TaskModal.vue'
 
 // Use composables
 const { isUserGuest } = useAuth()
@@ -49,7 +49,6 @@ const logColumnChange = (evt: any) => {
 }
 
 // State for task editing and creation
-const editingTask = ref<Task | null>(null)
 const newTask = ref<{ columnId: number | null, title: string, description: string }>({
   columnId: null,
   title: '',
@@ -115,7 +114,6 @@ const deleteTaskFromBoard = async (taskId: number, columnId: number) => {
     if (column) {
       column.tasks = column.tasks.filter(task => task.id !== taskId)
     }
-    closeTaskModal()
   } else {
     console.error('Failed to delete task')
   }
@@ -169,35 +167,29 @@ const selectedTask = ref<Task | null>(null)
 const selectedColumnId = ref<number | null>(null)
 
 const openTaskModal = (task: Task, columnId: number) => {
-  selectedTask.value = JSON.parse(JSON.stringify(task))
+  selectedTask.value = task
   selectedColumnId.value = columnId
   isModalOpen.value = true
 }
 
-const closeTaskModal = () => {
-  isModalOpen.value = false
-  selectedTask.value = null
-  selectedColumnId.value = null
-}
-
-const saveTaskChanges = async () => {
-  if (selectedTask.value && selectedColumnId.value !== null) {
+const handleTaskSave = async (updatedTask: Task) => {
+  if (selectedColumnId.value !== null) {
     const column = columns.value.find(col => col.id === selectedColumnId.value)
     if (column) {
-      await updateTask(selectedTask.value.id, {
-        title: selectedTask.value.title,
-        description: selectedTask.value.description,
+      await updateTask(updatedTask.id, {
+        title: updatedTask.title,
+        description: updatedTask.description,
         status: column.title.toLowerCase().replace(' ', '_')
       })
     }
   }
-  closeTaskModal()
+  await fetchTasks()
 }
 
-// Function to update task description
-const updateTaskDescription = (value: string) => {
-  if (selectedTask.value) {
-    selectedTask.value.description = value
+const handleTaskDelete = async (taskId: number) => {
+  if (selectedColumnId.value !== null) {
+    await deleteTaskFromBoard(taskId, selectedColumnId.value)
+    await fetchTasks()
   }
 }
 
@@ -210,7 +202,6 @@ onMounted(async () => {
 
 <template>
   <div class="board">
-    <h1 class="text-2xl font-bold mb-4">Project Board</h1>
     <div v-if="isUserGuest" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
       <p>You are using guest mode. Your changes will not be saved. <UButton color="primary" @click="$router.push('/auth/login')">Sign in to save your work</UButton></p>
     </div>
@@ -242,7 +233,7 @@ onMounted(async () => {
             >
               <template #item="{ element: task }">
                 <div class="task-wrapper">
-                  <div @click="openTaskModal(task, column.id)" class="bg-white p-2 mb-2 rounded-lg cursor-pointer">
+                  <div class="bg-white p-2 mb-2 rounded-lg cursor-pointer" @click="openTaskModal(task, column.id)">
                     <h3 class="font-semibold">{{ task.title }}</h3>
                   </div>
                 </div>
@@ -300,52 +291,18 @@ onMounted(async () => {
       </UButton>
     </div>
 
-    <!-- Task Modal -->
-    <UModal v-model:open="isModalOpen" :title="selectedTask?.title || 'Task Details'" prevent-close :ui="{ footer: 'justify-end' }">
-      <template #body>
-        <div v-if="selectedTask" class="space-y-4">
-          <div class="flex items-start space-x-3">
-            <UIcon name="i-lucide-edit" class="mt-1 flex-shrink-0" />
-            <div class="flex-grow">
-              <h4 class="font-medium mb-2">Title</h4>
-              <UInput
-                  v-model="selectedTask.title"
-                  placeholder="Task title"
-                  class="w-full"
-              />
-            </div>
-          </div>
-          <div class="flex items-start space-x-3">
-            <UIcon name="i-lucide-list" class="mt-1 flex-shrink-0" />
-            <div class="flex-grow">
-              <h4 class="font-medium mb-2">Description</h4>
-              <TaskEditor
-                  v-model="selectedTask.description"
-              />
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <template #footer="{ close }">
-        <UButton color="danger" variant="soft" @click="deleteTaskFromBoard(selectedTask?.id, selectedColumnId)">
-          Delete
-        </UButton>
-        <UButton color="neutral" variant="soft" @click="closeTaskModal">
-          Close
-        </UButton>
-        <UButton color="primary" @click="saveTaskChanges">
-          Save Changes
-        </UButton>
-      </template>
-    </UModal>
+    <TaskModal
+        :is-open="isModalOpen"
+        :task="selectedTask"
+        :column-id="selectedColumnId"
+        @update:is-open="isModalOpen = $event"
+        @save="handleTaskSave"
+        @delete="handleTaskDelete"
+    />
   </div>
 </template>
 
 <style scoped>
-.board {
-  padding: 20px;
-}
 .ghost {
   opacity: 0.5;
 }
@@ -355,9 +312,5 @@ onMounted(async () => {
 }
 .sortable-drag {
   opacity: 0.5;
-}
-/* Add some basic styling for Quill editor */
-:deep(.ql-container) {
-  min-height: 200px;
 }
 </style>
