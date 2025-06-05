@@ -6,6 +6,7 @@ import { useTasks } from '~/composables/useTasks'
 import { useColumns } from '~/composables/useColumns'
 import TaskModal from '~/components/TaskModal.vue'
 import ColumnComponent from '~/components/ColumnComponent.vue'
+import NewColumnForm from '~/components/NewColumnForm.vue'
 
 // Use composables
 const { isUserGuest } = useAuth()
@@ -64,7 +65,6 @@ const handleAddTask = async (newTaskData: { title: string, description: string, 
 
     const addedTask = await addTask(taskToAdd)
     if (addedTask) {
-      // Instead of pushing to the column tasks, we'll update the entire tasks array
       await fetchTasks()
     } else {
       console.error('Failed to add task')
@@ -73,45 +73,35 @@ const handleAddTask = async (newTaskData: { title: string, description: string, 
 }
 
 // State for new column creation
-const newColumnTitle = ref('')
 const isAddingColumn = ref(false)
 
 // Function to start adding a new column
 const startAddingColumn = () => {
   isAddingColumn.value = true
-  newColumnTitle.value = ''
 }
 
-// Function to save a new column
-const saveNewColumn = async () => {
-  if (newColumnTitle.value.trim()) {
-    const newColumnData = {
-      title: newColumnTitle.value.trim(),
-    }
+// Function to handle adding a new column
+const handleAddColumn = async (newColumnData: { title: string }) => {
+  const addedColumn = await addColumn(newColumnData)
+  if (addedColumn) {
+    isAddingColumn.value = false
+    await fetchColumns()
 
-    const addedColumn = await addColumn(newColumnData)
-    if (addedColumn) {
-      isAddingColumn.value = false
-      newColumnTitle.value = ''
-      await fetchColumns()
-
-      if (isUserGuest.value) {
-        columns.value.push({
-          id: addedColumn.id,
-          title: addedColumn.title,
-          tasks: []
-        })
-      }
-    } else {
-      console.error('Failed to add column')
+    if (isUserGuest.value) {
+      columns.value.push({
+        id: addedColumn.id,
+        title: addedColumn.title,
+        tasks: []
+      })
     }
+  } else {
+    console.error('Failed to add column')
   }
 }
 
 // Function to cancel adding a new column
 const cancelAddingColumn = () => {
   isAddingColumn.value = false
-  newColumnTitle.value = ''
 }
 
 // Modal state and functions
@@ -163,7 +153,6 @@ onMounted(async () => {
 
 <template>
   <div class="board">
-    <h1 class="text-2xl font-bold mb-4">Project Board</h1>
     <div v-if="isUserGuest" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
       <p>You are using guest mode. Your changes will not be saved. <UButton color="primary" @click="$router.push('/auth/login')">Sign in to save your work</UButton></p>
     </div>
@@ -188,26 +177,12 @@ onMounted(async () => {
         </template>
       </draggable>
 
-      <!-- New column creation UI -->
-      <div v-if="isAddingColumn" class="bg-gray-100 p-4 rounded-lg w-64 flex-shrink-0">
-        <UInput
-            v-model="newColumnTitle"
-            variant="none"
-            placeholder="Enter column title"
-            class="w-full mb-2"
-        />
-        <div class="flex space-x-2 mt-2">
-          <UButton color="primary" @click="saveNewColumn">Add Column</UButton>
-          <UButton
-              icon="i-lucide-x"
-              color="neutral"
-              variant="soft"
-              @click="cancelAddingColumn"
-          />
-        </div>
-      </div>
-
-      <!-- Add Column button -->
+      <!-- New column form or add column button -->
+      <NewColumnForm
+          v-if="isAddingColumn"
+          @add-column="handleAddColumn"
+          @cancel="cancelAddingColumn"
+      />
       <UButton
           v-else
           color="neutral"
@@ -231,9 +206,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.board {
-  padding: 20px;
-}
 .sortable-ghost {
   opacity: 0.8;
   background: #c8ebfb;
