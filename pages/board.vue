@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { useAuth } from '~/composables/useAuth'
 import { useTasks } from '~/composables/useTasks'
+import { useColumns } from '~/composables/useColumns'
 import TaskEditor from '~/components/TaskEditor.vue'
 
 // Load Quill only on client-side
@@ -14,10 +15,11 @@ onMounted(async () => {
   }
 })
 
-// Use the auth composable
+// Use composables
 const { isUserGuest } = useAuth()
-// Use the tasks composable
-const { tasks, loading, error, guestMessage, fetchTasks, addTask, updateTask, deleteTask, addColumn, columns, fetchColumns } = useTasks()
+const { tasks, loading: tasksLoading, error: tasksError, guestMessage, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
+const { columns, loading: columnsLoading, error: columnsError, fetchColumns, addColumn } = useColumns()
+
 
 // Define interfaces for Task and Column
 interface Task {
@@ -70,7 +72,6 @@ const startAddingTask = (columnId: number) => {
 }
 
 // Function to save a new task
-
 const saveNewTask = async () => {
   if (!newTask.value.columnId || !newTask.value.title.trim()) {
     console.error('Invalid task data')
@@ -89,7 +90,7 @@ const saveNewTask = async () => {
     description: newTask.value.description.trim() || '',
     status: status,
     column_id: newTask.value.columnId,
-    position: column.tasks.length
+    position: column.tasks?.length || 0 // Use optional chaining and provide a default value
   }
 
   // Clear the new task input immediately
@@ -101,6 +102,9 @@ const saveNewTask = async () => {
     // Update the column tasks
     const updatedColumn = columns.value.find(col => col.id === tempNewTask.columnId)
     if (updatedColumn) {
+      if (!updatedColumn.tasks) {
+        updatedColumn.tasks = [] // Initialize tasks array if it doesn't exist
+      }
       updatedColumn.tasks = updatedColumn.tasks.filter(task => task.id !== addedTask.id)
       updatedColumn.tasks.push(addedTask)
     }
@@ -135,16 +139,34 @@ const saveNewColumn = async () => {
 
     const addedColumn = await addColumn(newColumnData)
     if (addedColumn) {
-      columns.value.push({
-        id: addedColumn.id,
-        title: addedColumn.title,
-        tasks: []
-      })
+      // Reset the input and hide the "Add Column" form
       isAddingColumn.value = false
       newColumnTitle.value = ''
+
+      // Fetch the updated columns instead of manually updating the local state
+      await fetchColumns()
+
+      // If we're in guest mode, manually add the column to the local state
+      if (isUserGuest.value) {
+        columns.value.push({
+          id: addedColumn.id,
+          title: addedColumn.title,
+          tasks: []
+        })
+      }
+
+      // Show a success message
+      // Assuming you have a way to show notifications, e.g., using Nuxt UI's UNotification
+      // If not, you can console.log or implement a simple notification system
+      // useNotification().success({ title: 'Success', text: 'New column added successfully' })
     } else {
       console.error('Failed to add column')
+      // Show an error message
+      // useNotification().error({ title: 'Error', text: 'Failed to add new column' })
     }
+  } else {
+    // Show a warning if the column title is empty
+    // useNotification().warning({ title: 'Warning', text: 'Column title cannot be empty' })
   }
 }
 

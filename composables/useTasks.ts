@@ -20,7 +20,6 @@ export const useTasks = () => {
     const userStore = useUserStore()
     const { isUserGuest } = useAuth()
     const tasks = ref<Task[]>([])
-    const columns = ref<Column[]>([])
     const loading = ref(false)
     const error = ref<string | null>(null)
     const guestMessage = ref('')
@@ -184,79 +183,6 @@ export const useTasks = () => {
         }
     }
 
-
-
-    const addColumn = async (columnData: { title: string }) => {
-        if (isUserGuest.value) {
-            guestMessage.value = 'Column added locally. Sign in to save your changes.'
-            return { id: `temp_${Date.now()}`, ...columnData }
-        }
-
-        if (!userStore.user) {
-            error.value = 'User not authenticated'
-            return null
-        }
-
-        loading.value = true
-        error.value = null
-
-        try {
-            const { data, error: supabaseError } = await supabase
-                .from('columns')
-                .insert({ ...columnData, profile_id: userStore.user.id })
-                .select()
-                .single()
-
-            if (supabaseError) throw supabaseError
-
-            return data
-        } catch (e) {
-            console.error('Error adding column:', e)
-            error.value = 'Failed to add column'
-            return null
-        } finally {
-            loading.value = false
-        }
-    }
-
-
-    const fetchColumns = async () => {
-        if (isUserGuest.value) {
-            // For guest users, use default columns
-            columns.value = [
-                { id: 1, title: 'To Do', tasks: [] },
-                { id: 2, title: 'In Progress', tasks: [] },
-                { id: 3, title: 'Done', tasks: [] }
-            ]
-            return
-        }
-
-        if (!userStore.user) {
-            error.value = 'User not authenticated'
-            return
-        }
-
-        loading.value = true
-        error.value = null
-
-        try {
-            const { data, error: supabaseError } = await supabase
-                .from('columns')
-                .select('*')
-                .eq('profile_id', userStore.user.id)
-                .order('id', { ascending: true })
-
-            if (supabaseError) throw supabaseError
-
-            columns.value = data || []
-        } catch (e) {
-            console.error('Error fetching columns:', e)
-            columns.value = []
-        } finally {
-            loading.value = false
-        }
-    }
-
     return {
         tasks,
         loading,
@@ -265,9 +191,6 @@ export const useTasks = () => {
         fetchTasks,
         addTask,
         updateTask,
-        deleteTask,
-        columns,
-        fetchColumns,
-        addColumn
+        deleteTask
     }
 }
