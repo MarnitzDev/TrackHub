@@ -120,6 +120,23 @@ const cancelNewTask = () => {
   newTask.value = { columnId: null, title: '', description: '' }
 }
 
+// Add this near your other task-related functions
+const deleteTaskFromBoard = async (taskId: number, columnId: number) => {
+  const success = await deleteTask(taskId)
+  if (success) {
+    // Remove the task from the column
+    const column = columns.value.find(col => col.id === columnId)
+    if (column) {
+      column.tasks = column.tasks.filter(task => task.id !== taskId)
+    }
+    // Close the modal if it's open
+    closeTaskModal()
+  } else {
+    console.error('Failed to delete task')
+    // You might want to show an error message to the user here
+  }
+}
+
 // State for new column creation
 const newColumnTitle = ref('')
 const isAddingColumn = ref(false)
@@ -341,6 +358,9 @@ onMounted(async () => {
       </template>
 
       <template #footer="{ close }">
+        <UButton color="danger" variant="soft" @click="deleteTaskFromBoard(selectedTask?.id, selectedColumnId)">
+          Delete
+        </UButton>
         <UButton color="neutral" variant="soft" @click="closeTaskModal">
           Close
         </UButton>
