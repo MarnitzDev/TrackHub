@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, watchEffect, onMounted } from 'vue'
 import draggable from 'vuedraggable'
 import { useAuth } from '~/composables/useAuth'
 import { useTasks } from '~/composables/useTasks'
@@ -10,7 +10,7 @@ import ColumnComponent from '~/components/ColumnComponent.vue'
 // Use composables
 const { isUserGuest } = useAuth()
 const { tasks, loading: tasksLoading, error: tasksError, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
-const { columns, loading: columnsLoading, error: columnsError, fetchColumns, addColumn, updateColumnPositions } = useColumns()
+const { columns: rawColumns, loading: columnsLoading, error: columnsError, fetchColumns, addColumn, updateColumnPositions } = useColumns()
 
 // Define interfaces for Task and Column
 interface Task {
@@ -27,19 +27,28 @@ interface Column {
   tasks: Task[]
 }
 
-// Watch for changes in tasks and update columns
-watch(tasks, (newTasks) => {
-  columns.value.forEach(column => {
-    column.tasks = newTasks.filter(task => task.status === column.title.toLowerCase().replace(' ', '_'))
-  })
-}, { deep: true })
+// Computed property to combine columns and tasks
+const processedColumns = computed<Column[]>(() => {
+  if (!rawColumns.value || !tasks.value) return []
+
+  return rawColumns.value.map(column => ({
+    ...column,
+    tasks: tasks.value.filter(task => task.status === column.title.toLowerCase().replace(' ', '_'))
+  }))
+})
+
+// Use watchEffect for any side effects when columns or tasks change
+watchEffect(() => {
+  console.log('Columns updated:', processedColumns.value)
+  // Any other side effects you need to perform when columns or tasks change
+})
 
 // Log changes in task and column order
 const log = async (evt: any) => {
   console.log('Task change:', evt)
   if (evt.added) {
     const task = evt.added.element
-    const newStatus = columns.value.find(col => col.tasks.includes(task))?.title.toLowerCase().replace(' ', '_')
+    const newStatus = processedColumns.value.find(col => col.tasks.includes(task))?.title.toLowerCase().replace(' ', '_')
     if (newStatus) {
       await updateTask(task.id, { status: newStatus })
     }
@@ -49,7 +58,7 @@ const log = async (evt: any) => {
 const logColumnChange = (evt: any) => {
   console.log('Column change:', evt)
   if (evt.moved) {
-    const updatedColumns = columns.value.map((column, index) => ({
+    const updatedColumns = processedColumns.value.map((column, index) => ({
       ...column,
       position: index
     }))
@@ -59,7 +68,7 @@ const logColumnChange = (evt: any) => {
 
 // Handle adding a new task
 const handleAddTask = async (newTaskData: { title: string, description: string, columnId: number }) => {
-  const column = columns.value.find(col => col.id === newTaskData.columnId)
+  const column = processedColumns.value.find(col => col.id === newTaskData.columnId)
   if (column) {
     const status = column.title.toLowerCase().replace(' ', '_')
     const taskToAdd = {
@@ -99,10 +108,10 @@ const handleAddColumn = async () => {
       await fetchColumns()
 
       if (isUserGuest.value) {
-        columns.value.push({
+        rawColumns.value.push({
           id: addedColumn.id,
           title: addedColumn.title,
-          position: columns.value.length,
+          position: rawColumns.value.length,
           tasks: []
         })
       }
@@ -131,7 +140,7 @@ const openTaskModal = (task: Task, columnId: number) => {
 
 const handleTaskSave = async (updatedTask: Task) => {
   if (selectedColumnId.value !== null) {
-    const column = columns.value.find(col => col.id === selectedColumnId.value)
+    const column = processedColumns.value.find(col => col.id === selectedColumnId.value)
     if (column) {
       await updateTask(updatedTask.id, {
         title: updatedTask.title,
@@ -147,14 +156,10 @@ const handleTaskDelete = async (taskId: number) => {
   if (selectedColumnId.value !== null) {
     const success = await deleteTask(taskId)
     if (success) {
-      const column = columns.value.find(col => col.id === selectedColumnId.value)
-      if (column) {
-        column.tasks = column.tasks.filter(task => task.id !== taskId)
-      }
+      await fetchTasks()
     } else {
       console.error('Failed to delete task')
     }
-    await fetchTasks()
   }
 }
 
@@ -175,7 +180,7 @@ onMounted(async () => {
     <div v-else class="flex space-x-4">
       <!-- Draggable container for columns -->
       <draggable
-          v-model="columns"
+          v-model="processedColumns"
           group="columns"
           item-key="id"
           class="flex space-x-4"
