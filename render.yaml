@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: your-app-name
+    env: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm run build
+    startCommand: node .output/server/index.mjs
+    nodeVersion: 20.x
