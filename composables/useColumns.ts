@@ -1,8 +1,7 @@
-
 import { ref } from 'vue'
-import { useSupabaseClient } from '#imports'
 import { useUserStore } from '~/stores/userStore'
 import { useAuth } from '~/composables/useAuth'
+import { pool } from '~/config/database'
 
 interface Task {
     id: number
@@ -18,7 +17,6 @@ interface Column {
 }
 
 export const useColumns = () => {
-    const supabase = useSupabaseClient()
     const userStore = useUserStore()
     const { isUserGuest } = useAuth()
     const columns = ref<Column[]>([])
@@ -44,21 +42,18 @@ export const useColumns = () => {
         error.value = null
 
         try {
-            const { data, error: supabaseError } = await supabase
-                .from('columns')
-                .select('*')
-                .eq('profile_id', userStore.user.id)
-                .order('position', { ascending: true })
-
-            if (supabaseError) throw supabaseError
-
-            columns.value = data?.map(column => ({
+            const result = await pool.query(
+                'SELECT * FROM columns WHERE profile_id = $1 ORDER BY position ASC',
+                [userStore.user.id]
+            )
+            columns.value = result.rows.map(column => ({
                 ...column,
                 tasks: []
-            })) || []
+            }))
         } catch (e) {
             console.error('Error fetching columns:', e)
             columns.value = []
+            error.value = 'Failed to fetch columns'
         } finally {
             loading.value = false
         }
@@ -85,20 +80,13 @@ export const useColumns = () => {
         error.value = null
 
         try {
-            const { data, error: supabaseError } = await supabase
-                .from('columns')
-                .insert({
-                    ...columnData,
-                    profile_id: userStore.user.id,
-                    position: columns.value.length
-                })
-                .select()
-                .single()
-
-            if (supabaseError) throw supabaseError
-
-            columns.value.push({ ...data, tasks: [] })
-            return data
+            const result = await pool.query(
+                'INSERT INTO columns (title, profile_id, position) VALUES ($1, $2, $3) RETURNING *',
+                [columnData.title, userStore.user.id, columns.value.length]
+            )
+            const newColumn = { ...result.rows[0], tasks: [] }
+            columns.value.push(newColumn)
+            return newColumn
         } catch (e) {
             console.error('Error adding column:', e)
             error.value = 'Failed to add column'
@@ -123,24 +111,23 @@ export const useColumns = () => {
         error.value = null
 
         try {
-            const updates = updatedColumns.map(column => ({
-                id: column.id,
-                position: column.position,
-                profile_id: userStore.user.id,
-                title: column.title  // Include the title field
-            }))
+            // Start a transaction
+            await pool.query('BEGIN')
 
-            const { error: supabaseError } = await supabase
-                .from('columns')
-                .upsert(updates, {
-                    onConflict: 'id',
-                    returning: 'minimal'  // Add this to reduce the amount of data returned
-                })
+            for (const column of updatedColumns) {
+                await pool.query(
+                    'UPDATE columns SET position = $1, title = $2 WHERE id = $3 AND profile_id = $4',
+                    [column.position, column.title, column.id, userStore.user.id]
+                )
+            }
 
-            if (supabaseError) throw supabaseError
+            // Commit the transaction
+            await pool.query('COMMIT')
 
             columns.value = updatedColumns
         } catch (e) {
+            // Rollback the transaction in case of error
+            await pool.query('ROLLBACK')
             console.error('Error updating column positions:', e)
             error.value = 'Failed to update column positions'
         } finally {

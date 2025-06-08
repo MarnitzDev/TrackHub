@@ -1,25 +1,39 @@
 import { computed } from 'vue'
 import { useUserStore } from '~/stores/userStore'
 import { useRouter } from 'vue-router'
-import { useSupabaseClient } from '#imports'
+import { pool } from '~/config/database'
 
 export const useAuth = () => {
     const userStore = useUserStore()
     const router = useRouter()
-    const supabase = useSupabaseClient()
 
     const user = computed(() => userStore.user)
     const isAuthenticated = computed(() => userStore.isAuthenticated)
     const isUserGuest = computed(() => userStore.isGuest)
 
     const signInWithGoogle = async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`
+        // Implement OAuth with Google
+        // This will require setting up a Google OAuth client and handling the OAuth flow
+        console.error('Google Sign-In not implemented')
+    }
+
+    const signIn = async (email: string, password: string) => {
+        try {
+            const result = await pool.query(
+                'SELECT * FROM users WHERE email = $1 AND password = $2',
+                [email, password] // Note: In a real application, never store plain text passwords
+            )
+
+            if (result.rows.length > 0) {
+                const user = result.rows[0]
+                userStore.setUser(user)
+                router.push('/board')
+            } else {
+                console.error('Invalid credentials')
             }
-        })
-        if (error) console.error('Error signing in with Google:', error)
+        } catch (error) {
+            console.error('Error signing in:', error)
+        }
     }
 
     const signOut = async () => {
@@ -27,13 +41,8 @@ export const useAuth = () => {
             userStore.clearUser()
             router.push('/')
         } else {
-            const { error } = await supabase.auth.signOut()
-            if (error) {
-                console.error('Error signing out:', error)
-            } else {
-                userStore.clearUser()
-                router.push('/auth/login')
-            }
+            userStore.clearUser()
+            router.push('/auth/login')
         }
     }
 
@@ -43,9 +52,22 @@ export const useAuth = () => {
     }
 
     const loadUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-            userStore.setUser(user)
+        if (userStore.isAuthenticated) {
+            try {
+                const result = await pool.query(
+                    'SELECT * FROM users WHERE id = $1',
+                    [userStore.user.id]
+                )
+
+                if (result.rows.length > 0) {
+                    userStore.setUser(result.rows[0])
+                } else {
+                    userStore.clearUser()
+                }
+            } catch (error) {
+                console.error('Error loading user:', error)
+                userStore.clearUser()
+            }
         }
     }
 
@@ -54,6 +76,7 @@ export const useAuth = () => {
         isAuthenticated,
         isUserGuest,
         signInWithGoogle,
+        signIn,
         signOut,
         continueAsGuest,
         loadUser

@@ -14,17 +14,15 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@nuxt/ui',
     '@nuxt/test-utils',
-    '@nuxtjs/supabase',
     '@pinia/nuxt',
     'pinia-plugin-persistedstate/nuxt',
   ],
   runtimeConfig: {
-    public: {
-      supabaseUrl: process.env.SUPABASE_URL,
-      supabaseKey: process.env.SUPABASE_KEY
+    databaseUrl: process.env.DATABASE_URL
+  },
+  nitro: {
+    externals: {
+      inline: ['pg']
     }
-  },
-  supabase: {
-    redirect: false,
-  },
+  }
 })

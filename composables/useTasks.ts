@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
-import { useSupabaseClient } from '#imports'
 import { useUserStore } from '~/stores/userStore'
 import { useAuth } from '~/composables/useAuth'
+import { pool } from '~/config/database'
 
 interface Task {
     id?: string
@@ -16,7 +16,6 @@ interface Task {
 }
 
 export const useTasks = () => {
-    const supabase = useSupabaseClient()
     const userStore = useUserStore()
     const { isUserGuest } = useAuth()
     const tasks = ref<Task[]>([])
@@ -39,23 +38,19 @@ export const useTasks = () => {
         error.value = null
 
         try {
-            const { data, error: supabaseError } = await supabase
-                .from('tasks')
-                .select('*')
-                .eq('profile_id', userStore.user.id)
-                .order('position', { ascending: true })
-
-            if (supabaseError) throw supabaseError
-
-            tasks.value = data || []
+            const result = await pool.query(
+                'SELECT * FROM tasks WHERE profile_id = $1 ORDER BY position ASC',
+                [userStore.user.id]
+            )
+            tasks.value = result.rows
         } catch (e) {
             console.error('Error fetching tasks:', e)
             tasks.value = []
+            error.value = 'Failed to fetch tasks'
         } finally {
             loading.value = false
         }
     }
-
 
     const addTask = async (taskData: Omit<Task, 'id' | 'profile_id' | 'created_at' | 'updated_at'>) => {
         if (isUserGuest.value) {
@@ -80,21 +75,13 @@ export const useTasks = () => {
         error.value = null
 
         try {
-            const newTask: Omit<Task, 'id' | 'created_at' | 'updated_at'> = {
-                ...taskData,
-                profile_id: userStore.user.id,
-            }
-
-            const { data, error: supabaseError } = await supabase
-                .from('tasks')
-                .insert(newTask)
-                .select()
-                .single()
-
-            if (supabaseError) throw supabaseError
-
-            tasks.value.push(data)
-            return data
+            const result = await pool.query(
+                'INSERT INTO tasks (profile_id, title, description, status, column_id, position) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+                [userStore.user.id, taskData.title, taskData.description, taskData.status, taskData.column_id, taskData.position]
+            )
+            const newTask = result.rows[0]
+            tasks.value.push(newTask)
+            return newTask
         } catch (e) {
             console.error('Error adding task:', e)
             error.value = 'Failed to add task'
@@ -123,22 +110,18 @@ export const useTasks = () => {
         error.value = null
 
         try {
-            const { data, error: supabaseError } = await supabase
-                .from('tasks')
-                .update(updates)
-                .eq('id', taskId)
-                .eq('profile_id', userStore.user.id)
-                .select()
-                .single()
-
-            if (supabaseError) throw supabaseError
-
+            const setClause = Object.keys(updates).map((key, index) => `${key} = $${index + 3}`).join(', ')
+            const values = Object.values(updates)
+            const result = await pool.query(
+                `UPDATE tasks SET ${setClause}, updated_at = NOW() WHERE id = $1 AND profile_id = $2 RETURNING *`,
+                [taskId, userStore.user.id, ...values]
+            )
+            const updatedTask = result.rows[0]
             const index = tasks.value.findIndex(t => t.id === taskId)
             if (index !== -1) {
-                tasks.value[index] = { ...tasks.value[index], ...data }
+                tasks.value[index] = updatedTask
             }
-
-            return data
+            return updatedTask
         } catch (e) {
             error.value = 'Failed to update task'
             console.error('Error updating task:', e)
@@ -164,14 +147,10 @@ export const useTasks = () => {
         error.value = null
 
         try {
-            const { error: supabaseError } = await supabase
-                .from('tasks')
-                .delete()
-                .eq('id', taskId)
-                .eq('profile_id', userStore.user.id)
-
-            if (supabaseError) throw supabaseError
-
+            await pool.query(
+                'DELETE FROM tasks WHERE id = $1 AND profile_id = $2',
+                [taskId, userStore.user.id]
+            )
             tasks.value = tasks.value.filter(t => t.id !== taskId)
             return true
         } catch (e) {
