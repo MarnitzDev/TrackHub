@@ -4,14 +4,6 @@ TrackHub is a modern, intuitive project management tool built with Nuxt.js, desi
 
 ![TrackHub Dashboard](path/to/dashboard-screenshot.png)
 
-## 🌟 Features
-
-- **Intuitive Kanban Boards**: Visualize your workflow with easy-to-use drag-and-drop boards.
-- **Task Management**: Create, assign, and track tasks effortlessly.
-- **User-Friendly Interface**: Clean and responsive design for seamless usage across devices.
-- **Real-Time Updates**: Stay synchronized with your team with instant updates.
-- **Customizable Workflows**: Tailor the boards to fit your unique project needs.
-
 ## 🚀 Demo
 
 Experience TrackHub in action: [Live Demo](https://trackhub.marnitzmalan.com/projects)
@@ -21,6 +13,15 @@ Experience TrackHub in action: [Live Demo](https://trackhub.marnitzmalan.com/pro
 ## 💻 Technology Stack
 
 [![My Skills](https://skillicons.dev/icons?i=nuxtjs,vue,tailwind,nodejs,postgres&theme=light)](https://skillicons.dev)
+
+## 🌟 Features
+
+- **Intuitive Kanban Boards**: Visualize your workflow with easy-to-use drag-and-drop boards.
+- **Task Management**: Create, assign, and track tasks effortlessly.
+- **User-Friendly Interface**: Clean and responsive design for seamless usage across devices.
+- **Real-Time Updates**: Stay synchronized with your team with instant updates.
+- **Customizable Workflows**: Tailor the boards to fit your unique project needs.
+
 
 ---
 
