@@ -14,7 +14,7 @@ TrackHub is a modern, intuitive project management tool built with Nuxt.js, desi
 
 ## 🚀 Demo
 
-Experience TrackHub in action: <a href="https://trackhub.marnitzmalan.com/projects" target="_blank">Live Demo</a>
+Experience TrackHub in action: [Live Demo](https://trackhub.marnitzmalan.com/projects){:target="_blank"}
 
 ![TrackHub in Action](path/to/trackhub-demo.gif)
 
