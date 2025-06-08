@@ -22,33 +22,6 @@ Experience TrackHub in action: [Live Demo](https://trackhub.marnitzmalan.com/pro
 
 [![My Skills](https://skillicons.dev/icons?i=nuxtjs,vue,tailwind,nodejs,postgres&theme=light)](https://skillicons.dev)
 
-## 🛠 Getting Started
-
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Set up your environment variables (see `.env.example`)
-4. Run the development server: `npm run dev`
-
-For detailed setup instructions, please refer to our [Developer Guide](link-to-developer-guide).
-
-## 📸 Screenshots
-
-| Board View | Task Details |
-|------------|--------------|
-| ![Board View](path/to/board-view.png) | ![Task Details](path/to/task-details.png) |
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](link-to-contributing-guide) for more details.
-
-## 📄 License
-
-TrackHub is open-source software licensed under the [MIT license](link-to-license).
-
-## 📬 Contact
-
-For support or queries, reach out to us at [support@trackhub.com](mailto:support@trackhub.com).
-
 ---
 
-Built with ❤️ by [Marnitz Malan]
+Built with ❤️ by [Marnitz Malan](mailto:malanmarnitz@gmail.com)
