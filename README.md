@@ -31,7 +31,7 @@ Experience TrackHub in action: [Live Demo](https://trackhub.marnitzmalan.com/pro
 3. Set up your environment variables (see `.env.example`)
 4. Run the development server: `npm run dev`
 
-For detailed setup instructions, please refer to our [Developer Guide](link-to-developer-guide).
+For detailed setup instructions, please refer to our [Developer Guide](link-to-developer-guide){:target="_blank"}.
 
 ## 📸 Screenshots
 
@@ -41,15 +41,15 @@ For detailed setup instructions, please refer to our [Developer Guide](link-to-d
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](link-to-contributing-guide) for more details.
+We welcome contributions! Please see our [Contributing Guide](link-to-contributing-guide){:target="_blank"} for more details.
 
 ## 📄 License
 
-TrackHub is open-source software licensed under the [MIT license](link-to-license).
+TrackHub is open-source software licensed under the [MIT license](link-to-license){:target="_blank"}.
 
 ## 📬 Contact
 
-For support or queries, reach out to us at [support@trackhub.com](mailto:support@trackhub.com).
+For support or queries, reach out to us at [support@trackhub.com](mailto:support@trackhub.com){:target="_blank"}.
 
 ---
 
