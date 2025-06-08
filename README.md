@@ -20,9 +20,7 @@ Experience TrackHub in action: [Live Demo](https://trackhub.marnitzmalan.com/pro
 
 ## 💻 Technology Stack
 
-- **Frontend**: Nuxt.js, Vue 3, TailwindCSS
-- **Backend**: Node.js, PostgreSQL
-- **Authentication**: Google OAuth
+[![My Skills](https://skillicons.dev/icons?i=nuxtjs,vue,tailwind,nodejs,postgres&theme=light)](https://skillicons.dev)
 
 ## 🛠 Getting Started
 
