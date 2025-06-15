@@ -1,76 +1,48 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useUserStore } from '~/stores/userStore'
 
-const { user, isAuthenticated, isUserGuest, signInWithGoogle, signOut, continueAsGuest, loadUser } = useAuth()
+const { user, isAuthenticated, isUserGuest, signInWithAuth0, signOut, loadUser } = useAuth()
 const userStore = useUserStore()
 
-const userMetadata = computed(() => {
-  console.log('Current user metadata:', userStore.userMetadata);
-  return userStore.userMetadata;
-})
+const userMetadata = computed(() => userStore.userMetadata)
 
 const displayName = computed(() => {
-  if (isUserGuest.value) {
-    return 'Guest User'
-  }
-  return user.value?.user_metadata?.full_name || 'User'
+  if (isUserGuest.value) return 'Guest User'
+  return user.value?.name || userMetadata.value?.full_name || 'User'
 })
 
 const avatarUrl = computed(() => {
-  if (isUserGuest.value) {
-    return '/guest-avatar.png'
-  }
-  return userMetadata.value?.avatar_url
+  if (isUserGuest.value) return '/guest-avatar.png'
+  return user.value?.picture || userMetadata.value?.avatar_url
 })
 
 const items = [
-  {
-    label: 'Dashboard',
-    icon: 'i-lucide-home',
-    to: '/'
-  },
-  {
-    label: 'Board',
-    icon: 'i-lucide-layout-dashboard',
-    to: '/board',
-  },
-  {
-    label: 'Projects',
-    icon: 'i-lucide-folder',
-    to: '/projects'
-  },
-  {
-    label: 'Tasks',
-    icon: 'i-lucide-check-square',
-    to: '/tasks'
-  },
-  {
-    label: 'Team',
-    icon: 'i-lucide-users',
-    to: '/team'
-  }
+  { label: 'Dashboard', icon: 'i-lucide-home', to: '/' },
+  { label: 'Board', icon: 'i-lucide-layout-dashboard', to: '/board' },
+  { label: 'Projects', icon: 'i-lucide-folder', to: '/projects' },
+  { label: 'Tasks', icon: 'i-lucide-check-square', to: '/tasks' },
+  { label: 'Team', icon: 'i-lucide-users', to: '/team' }
 ]
 
 const isUserMenuOpen = ref(false)
 
-
 const toggleUserMenu = () => {
-  console.log('Toggling user menu. isUserGuest:', isUserGuest.value)
   isUserMenuOpen.value = !isUserMenuOpen.value
 }
 
-const handleSignOut = () => {
-  console.log('Handle sign out called. isUserGuest:', isUserGuest.value)
-  if (!isUserGuest.value) {
-    signOut()
-  }
+const handleSignOut = async () => {
+  await signOut()
+  isUserMenuOpen.value = false
+}
+
+const handleSignIn = () => {
+  signInWithAuth0()
   isUserMenuOpen.value = false
 }
 
 onMounted(() => {
-  console.log('AppHeader mounted. Loading user...')
   loadUser()
 })
 </script>
@@ -107,7 +79,7 @@ onMounted(() => {
                 v-if="avatarUrl"
                 :src="avatarUrl"
                 alt="User"
-                class="h-8 w-8 rounded-full"
+                class="h-8 w-8 rounded-full object-cover"
             >
             <UIcon
                 v-else
@@ -117,41 +89,43 @@ onMounted(() => {
             <span class="hidden md:inline">{{ displayName }}</span>
             <UIcon name="i-lucide-chevron-down" class="w-4 h-4 text-gray-500" />
           </button>
-          <div
-              v-if="isUserMenuOpen"
-              class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
+          <transition
+              enter-active-class="transition ease-out duration-100"
+              enter-from-class="transform opacity-0 scale-95"
+              enter-to-class="transform opacity-100 scale-100"
+              leave-active-class="transition ease-in duration-75"
+              leave-from-class="transform opacity-100 scale-100"
+              leave-to-class="transform opacity-0 scale-95"
           >
-            <template v-if="isAuthenticated || isUserGuest">
-              <NuxtLink
-                  v-if="!isUserGuest"
-                  to="/profile"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Profile
-              </NuxtLink>
-              <button
-                  v-if="!isUserGuest"
-                  @click="handleSignOut"
-                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Sign out
-              </button>
-              <NuxtLink
-                  v-if="isUserGuest"
-                  to="/auth/login"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Sign In
-              </NuxtLink>
-            </template>
-            <NuxtLink
-                v-if="!isAuthenticated && !isUserGuest"
-                to="/auth/login"
-                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            <div
+                v-if="isUserMenuOpen"
+                class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
             >
-              Sign In
-            </NuxtLink>
-          </div>
+              <template v-if="isAuthenticated">
+                <NuxtLink
+                    to="/profile"
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    @click="isUserMenuOpen = false"
+                >
+                  Profile
+                </NuxtLink>
+                <button
+                    @click="handleSignOut"
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Sign out
+                </button>
+              </template>
+              <template v-else>
+                <button
+                    @click="handleSignIn"
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Sign In
+                </button>
+              </template>
+            </div>
+          </transition>
         </div>
       </div>
     </div>

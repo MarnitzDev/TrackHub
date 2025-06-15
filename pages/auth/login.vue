@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import { useAuth0 } from '@auth0/auth0-vue'
+import { useAuth } from '~/composables/useAuth'
+
 definePageMeta({
   layout: 'auth'
 })
 
-import { useAuth } from '~/composables/useAuth'
+const { loginWithRedirect } = useAuth0()
+const { continueAsGuest } = useAuth()
 
-const { signInWithGoogle, continueAsGuest } = useAuth()
-
-const handleGoogleSignIn = () => {
-  signInWithGoogle()
+const handleAuth0SignIn = () => {
+  loginWithRedirect()
 }
 
 const handleContinueAsGuest = () => {
@@ -23,10 +25,10 @@ const handleContinueAsGuest = () => {
       <UButton
           block
           color="primary"
-          @click="handleGoogleSignIn"
+          @click="handleAuth0SignIn"
       >
-        <UIcon name="i-logos-google-icon" class="mr-2" />
-        Sign in with Google
+        <UIcon name="i-logos-auth0-icon" class="mr-2" />
+        Sign in with Auth0
       </UButton>
       <UButton
           block

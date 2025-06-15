@@ -17,8 +17,19 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     'pinia-plugin-persistedstate/nuxt',
   ],
+  plugins: [
+    '~/plugins/auth0.ts'
+  ],
   runtimeConfig: {
-    databaseUrl: process.env.DATABASE_URL
+    databaseUrl: process.env.DATABASE_URL,
+    public: {
+      auth0: {
+        domain: process.env.AUTH0_DOMAIN,
+        clientId: process.env.AUTH0_CLIENT_ID,
+        audience: process.env.AUTH0_AUDIENCE,
+        redirectUri: process.env.AUTH0_CALLBACK_URL,
+      }
+    },
   },
   nitro: {
     externals: {
