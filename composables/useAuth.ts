@@ -47,11 +47,42 @@ export const useAuth = () => {
         isUserGuest.value = true
     }
 
+    const saveUserToDatabase = async (auth0User) => {
+        try {
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: auth0User.email,
+                    name: auth0User.name,
+                    auth0Id: auth0User.sub,
+                }),
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to save user to database')
+            }
+
+            return await response.json()
+        } catch (error) {
+            console.error('Error saving user to database:', error)
+            throw error
+        }
+    }
+
     const loadUser = async () => {
         console.log('Loading user')
         if (auth0.isAuthenticated.value && auth0.user.value) {
-            console.log('Setting user in store:', auth0.user.value)
-            userStore.setUser(auth0.user.value)
+            try {
+                const savedUser = await saveUserToDatabase(auth0.user.value)
+                console.log('Setting user in store:', savedUser)
+                userStore.setUser(savedUser)
+            } catch (error) {
+                console.error('Error loading user:', error)
+                // Handle error (e.g., show an error message to the user)
+            }
         } else {
             console.log('No authenticated user to load')
         }
@@ -103,6 +134,7 @@ export const useAuth = () => {
         continueAsGuest,
         loadUser,
         getAccessToken,
-        checkAuth
+        checkAuth,
+        saveUserToDatabase
     }
 }

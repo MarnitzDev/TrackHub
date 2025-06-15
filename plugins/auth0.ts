@@ -1,8 +1,7 @@
-
 import { defineNuxtPlugin, useRuntimeConfig } from '#app'
-import { createAuth0, Auth0Plugin } from '@auth0/auth0-vue'
 import { watch } from 'vue'
 import { useUserStore } from '~/stores/userStore'
+import { createAuth0, Auth0Plugin } from '@auth0/auth0-vue'
 
 export default defineNuxtPlugin(async (nuxtApp) => {
     const config = useRuntimeConfig()
@@ -25,8 +24,8 @@ export default defineNuxtPlugin(async (nuxtApp) => {
                 redirect_uri: `${window.location.origin}/auth/callback`,
                 audience: config.public.auth0.audience,
             },
-            cacheLocation: 'localstorage', // This ensures the token is stored in localStorage
-            useRefreshTokens: true, // This enables the use of refresh tokens
+            cacheLocation: 'localstorage',
+            useRefreshTokens: true,
         })
 
         nuxtApp.vueApp.use(auth0)
@@ -37,9 +36,12 @@ export default defineNuxtPlugin(async (nuxtApp) => {
         watch(() => auth0.isAuthenticated.value, async (isAuthenticated) => {
             console.log('Is authenticated:', isAuthenticated)
             if (isAuthenticated) {
-                const user = await auth0.getUser()
+                // Use auth0.user instead of auth0.getUser()
+                const user = auth0.user.value
                 console.log('Authenticated user:', user)
-                userStore.setUser(user)
+                if (user) {
+                    userStore.setUser(user)
+                }
             } else {
                 userStore.clearUser()
             }
