@@ -1,15 +1,16 @@
-import { useAuth } from '~/composables/useAuth'
+
 import { ref } from 'vue'
+import { useAuth } from '~/composables/useAuth'
 import { useUserStore } from '~/stores/userStore'
 
 export const useColumns = () => {
-    const userStore = useUserStore()
     const { isUserGuest } = useAuth()
+    const userStore = useUserStore()
     const columns = ref<Column[]>([])
     const loading = ref(false)
     const error = ref<string | null>(null)
 
-    const fetchColumns = async () => {
+    const fetchColumns = async (projectId: string) => {
         if (isUserGuest.value) {
             columns.value = [
                 { id: 1, title: 'To Do', position: 0, tasks: [] },
@@ -19,38 +20,26 @@ export const useColumns = () => {
             return
         }
 
-        if (!userStore.user) {
-            error.value = 'User not authenticated'
-            return
-        }
-
         loading.value = true
         error.value = null
 
         try {
-            const pool = getPool()
-            const result = await pool.query(
-                'SELECT * FROM columns WHERE profile_id = $1 ORDER BY position ASC',
-                [userStore.user.id]
-            )
-            columns.value = result.rows.map(column => ({
-                ...column,
-                tasks: []
-            }))
+            const response = await fetch(`/api/columns?projectId=${projectId}`)
+            if (!response.ok) throw new Error('Failed to fetch columns')
+            columns.value = await response.json()
         } catch (e) {
             console.error('Error fetching columns:', e)
-            columns.value = []
             error.value = 'Failed to fetch columns'
         } finally {
             loading.value = false
         }
     }
 
-    const addColumn = async (columnData: { title: string }) => {
+    const addColumn = async (columnData: { title: string, projectId: string }) => {
         if (isUserGuest.value) {
             const newColumn = {
                 id: columns.value.length + 1,
-                ...columnData,
+                title: columnData.title,
                 position: columns.value.length,
                 tasks: []
             }
@@ -58,20 +47,20 @@ export const useColumns = () => {
             return newColumn
         }
 
-        if (!userStore.user) {
-            error.value = 'User not authenticated'
-            return null
-        }
-
         loading.value = true
         error.value = null
 
         try {
-            const result = await pool.query(
-                'INSERT INTO columns (title, profile_id, position) VALUES ($1, $2, $3) RETURNING *',
-                [columnData.title, userStore.user.id, columns.value.length]
-            )
-            const newColumn = { ...result.rows[0], tasks: [] }
+            const response = await fetch('/api/columns', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...columnData,
+                    position: columns.value.length
+                })
+            })
+            if (!response.ok) throw new Error('Failed to add column')
+            const newColumn = await response.json()
             columns.value.push(newColumn)
             return newColumn
         } catch (e) {
@@ -83,14 +72,9 @@ export const useColumns = () => {
         }
     }
 
-    const updateColumnPositions = async (updatedColumns: Column[]) => {
+    const removeColumn = async (columnId: number) => {
         if (isUserGuest.value) {
-            columns.value = updatedColumns
-            return
-        }
-
-        if (!userStore.user) {
-            error.value = 'User not authenticated'
+            columns.value = columns.value.filter(col => col.id !== columnId)
             return
         }
 
@@ -98,23 +82,43 @@ export const useColumns = () => {
         error.value = null
 
         try {
-            // Start a transaction
-            await pool.query('BEGIN')
+            const response = await fetch(`/api/columns?id=${columnId}`, {
+                method: 'DELETE'
+            })
+            if (!response.ok) throw new Error('Failed to remove column')
+            columns.value = columns.value.filter(col => col.id !== columnId)
+        } catch (e) {
+            console.error('Error removing column:', e)
+            error.value = 'Failed to remove column'
+        } finally {
+            loading.value = false
+        }
+    }
 
-            for (const column of updatedColumns) {
-                await pool.query(
-                    'UPDATE columns SET position = $1, title = $2 WHERE id = $3 AND profile_id = $4',
-                    [column.position, column.title, column.id, userStore.user.id]
-                )
-            }
+    const updateColumnPositions = async (updatedColumns: Column[]) => {
+        if (isUserGuest.value) {
+            columns.value = updatedColumns
+            return
+        }
 
-            // Commit the transaction
-            await pool.query('COMMIT')
+        loading.value = true
+        error.value = null
 
+        try {
+            const updatePromises = updatedColumns.map(column =>
+                fetch('/api/columns', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: column.id,
+                        title: column.title,
+                        position: column.position
+                    })
+                })
+            )
+            await Promise.all(updatePromises)
             columns.value = updatedColumns
         } catch (e) {
-            // Rollback the transaction in case of error
-            await pool.query('ROLLBACK')
             console.error('Error updating column positions:', e)
             error.value = 'Failed to update column positions'
         } finally {
@@ -128,6 +132,7 @@ export const useColumns = () => {
         error,
         fetchColumns,
         addColumn,
+        removeColumn,
         updateColumnPositions
     }
 }
