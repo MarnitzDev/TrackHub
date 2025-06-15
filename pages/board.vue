@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import BoardComponent from '~/components/BoardComponent.vue'
+import { useAuth } from '~/composables/useAuth'
+
+const { isAuthenticated, user } = useAuth()
 
 const QuillEditor = ref(null)
 
-// Keep the Quill loading logic here
 onMounted(async () => {
   if (process.client) {
     const quillModule = await import('@vueup/vue-quill')
@@ -13,7 +15,7 @@ onMounted(async () => {
   }
 })
 
-// Handle any board events if necessary
+// Handle board events
 const handleTaskAdded = (task) => {
   console.log('Task added:', task)
   // Handle task added
@@ -38,11 +40,17 @@ const handleColumnAdded = (column) => {
 <template>
   <div>
     <h1 class="text-2xl font-bold mb-4">Project Board</h1>
-    <BoardComponent
-        @task-added="handleTaskAdded"
-        @task-updated="handleTaskUpdated"
-        @task-deleted="handleTaskDeleted"
-        @column-added="handleColumnAdded"
-    />
+    <div v-if="isAuthenticated">
+      <p>Welcome, {{ user?.name }}</p>
+      <BoardComponent
+          @task-added="handleTaskAdded"
+          @task-updated="handleTaskUpdated"
+          @task-deleted="handleTaskDeleted"
+          @column-added="handleColumnAdded"
+      />
+    </div>
+    <div v-else>
+      <p>Please log in to view the board.</p>
+    </div>
   </div>
 </template>

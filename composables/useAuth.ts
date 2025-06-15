@@ -1,7 +1,6 @@
-
-import { useAuth0 } from '@auth0/auth0-vue'
+import { computed, ref, watch } from 'vue'
 import { useUserStore } from '~/stores/userStore'
-import { computed, ref } from 'vue'
+import { useAuth0 } from '@auth0/auth0-vue'
 
 export const useAuth = () => {
     const auth0 = useAuth0()
@@ -34,9 +33,18 @@ export const useAuth = () => {
         }
     }
 
+    // Use watch to react to authentication state changes
+    watch(() => auth0.isAuthenticated.value, (isAuthenticated) => {
+        if (isAuthenticated && auth0.user.value) {
+            userStore.setUser(auth0.user.value)
+        } else {
+            userStore.clearUser()
+        }
+    }, { immediate: true })
+
     return {
-        user: auth0.user,
-        isAuthenticated: auth0.isAuthenticated,
+        user: computed(() => auth0.user.value),
+        isAuthenticated: computed(() => auth0.isAuthenticated.value),
         isUserGuest: computed(() => isUserGuest.value),
         signInWithAuth0,
         signOut,

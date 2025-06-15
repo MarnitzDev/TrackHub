@@ -19,7 +19,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
     }
 
     // If user is authenticated (including guests), allow access
-    if (userStore.isAuthenticated || userStore.isGuest) {
+    if (userStore.isAuthenticated) {
         console.log("User is authenticated or guest, allowing access")
         return
     }
