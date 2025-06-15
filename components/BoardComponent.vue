@@ -35,14 +35,23 @@ interface Column {
 
 // Computed property to combine columns and tasks
 const processedColumns = computed<Column[]>(() => {
-  if (!rawColumns.value || !tasks.value || !Array.isArray(tasks.value)) return []
+  console.log('Raw columns:', rawColumns.value)
+  console.log('Tasks:', tasks.value)
 
-  return rawColumns.value.map(column => ({
+  if (!rawColumns.value || !Array.isArray(rawColumns.value)) {
+    console.log('Raw columns is not an array or is undefined')
+    return []
+  }
+
+  const result = rawColumns.value.map(column => ({
     ...column,
     tasks: Array.isArray(tasks.value)
         ? tasks.value.filter(task => task.status === column.title.toLowerCase().replace(' ', '_'))
         : []
   }))
+
+  console.log('Processed columns:', result)
+  return result
 })
 
 // Use watchEffect for any side effects when columns or tasks change
@@ -112,7 +121,10 @@ const handleAddColumn = async () => {
       await addColumn(currentProject.value.id, newColumnTitle.value.trim())
       isAddingColumn.value = false
       newColumnTitle.value = ''
-      await fetchColumns(currentProject.value.id)
+      // Refresh the columns for the current project
+      if (currentProject.value) {
+        await fetchColumns(currentProject.value.id)
+      }
     } catch (e) {
       console.error('Error adding column:', e)
     }
@@ -189,17 +201,21 @@ onMounted(async () => {
 // Function to fetch both columns and tasks
 const fetchProjectData = async () => {
   if (currentProject.value) {
-    await Promise.all([
+    console.log('Fetching data for project:', currentProject.value)
+    const [columnsResult, tasksResult] = await Promise.all([
       fetchColumns(currentProject.value.id),
       fetchTasks(currentProject.value.id)
     ])
+    console.log('Fetched columns:', columnsResult)
+    console.log('Fetched tasks:', tasksResult)
+    console.log('Current tasks value:', tasks.value)
   }
 }
 
 // Watch for changes in currentProject
-watchEffect(() => {
+watchEffect(async () => {
   if (currentProject.value) {
-    fetchProjectData()
+    await fetchProjectData()
   }
 })
 </script>
@@ -294,6 +310,15 @@ watchEffect(() => {
         @save="handleTaskSave"
         @delete="handleTaskDelete"
     />
+
+    <!-- Debug section -->
+    <div v-if="currentProject" class="mt-8 p-4 bg-gray-100 rounded">
+      <h3 class="text-lg font-bold mb-2">Debug Info:</h3>
+      <p>Current Project: {{ currentProject }}</p>
+      <p>Raw Columns: {{ rawColumns }}</p>
+      <p>Processed Columns: {{ processedColumns }}</p>
+    </div>
+
   </div>
 </template>
 

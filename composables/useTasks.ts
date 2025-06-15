@@ -24,8 +24,8 @@ export const useTasks = () => {
 
     const fetchTasks = async (projectId: string) => {
         if (isUserGuest.value) {
-            guestMessage.value = 'You are using guest mode. Tasks will not be saved.'
-            return
+            tasks.value = [] // or some default tasks for guest mode
+            return tasks.value
         }
 
         if (!userStore.user) {
