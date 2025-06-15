@@ -10,9 +10,12 @@ import ColumnComponent from '~/components/ColumnComponent.vue'
 
 // Use composables
 const { isUserGuest } = useAuth()
-const { projects, currentProject, loading: projectsLoading, error: projectsError, fetchProjects, createProject, setCurrentProject } = useProjects()
+const { projects, loading: projectsLoading, error: projectsError, fetchProjects, createProject, setCurrentProject } = useProjects()
 const { columns: rawColumns, loading: columnsLoading, error: columnsError, fetchColumns, addColumn, updateColumnPositions } = useColumns()
 const { tasks, loading: tasksLoading, error: tasksError, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
+
+// Use ref for currentProject instead of getting it from useProjects
+const currentProject = ref(null)
 
 const props = defineProps<{
   currentProject: { id: string; title: string }
@@ -83,24 +86,27 @@ const logColumnChange = (evt: any) => {
 }
 
 // Handle adding a new task
-const handleAddTask = async (newTaskData: { title: string, description: string, columnId: number }) => {
-  const column = processedColumns.value.find(col => col.id === newTaskData.columnId)
-  if (column) {
-    const status = column.title.toLowerCase().replace(' ', '_')
-    const taskToAdd = {
-      title: newTaskData.title.trim(),
-      description: newTaskData.description.trim() || '',
-      status: status,
-      column_id: newTaskData.columnId,
-      position: column.tasks?.length || 0
-    }
-
-    const addedTask = await addTask(taskToAdd)
+const handleAddTask = async (newTaskData: { title: string, description: string, columnId: string }) => {
+  console.log('Handling add task:', newTaskData) // Add this line for debugging
+  if (!currentProject.value) {
+    console.error('No current project selected')
+    return
+  }
+  try {
+    const addedTask = await addTask({
+      ...newTaskData,
+      projectId: currentProject.value.id,
+      status: 'todo',
+      position: tasks.value.length,
+      columnId: newTaskData.columnId // Make sure this is included
+    })
     if (addedTask) {
-      await fetchTasks(currentProject.value?.id)
+      console.log('Task added successfully:', addedTask)
     } else {
-      console.error('Failed to add task')
+      console.error('Failed to add task: No task returned')
     }
+  } catch (error) {
+    console.error('Error in handleAddTask:', error)
   }
 }
 
@@ -193,7 +199,7 @@ const handleCreateProject = async () => {
 onMounted(async () => {
   await fetchProjects()
   if (projects.value.length > 0) {
-    setCurrentProject(projects.value[0].id)
+    currentProject.value = projects.value[0]
     await fetchProjectData()
   }
 })
@@ -201,16 +207,12 @@ onMounted(async () => {
 // Function to fetch both columns and tasks
 const fetchProjectData = async () => {
   if (currentProject.value) {
-    console.log('Fetching data for project:', currentProject.value)
-    const [columnsResult, tasksResult] = await Promise.all([
-      fetchColumns(currentProject.value.id),
-      fetchTasks(currentProject.value.id)
-    ])
-    console.log('Fetched columns:', columnsResult)
-    console.log('Fetched tasks:', tasksResult)
-    console.log('Current tasks value:', tasks.value)
+    await fetchTasks(currentProject.value.id)
+  } else {
+    console.error('No current project selected')
   }
 }
+
 
 // Watch for changes in currentProject
 watchEffect(async () => {
@@ -318,6 +320,11 @@ watchEffect(async () => {
       <p>Raw Columns: {{ rawColumns }}</p>
       <p>Processed Columns: {{ processedColumns }}</p>
     </div>
+
+    <div v-for="task in tasks" :key="task.id">
+      {{ task.title }}
+    </div>
+    <p>Total tasks: {{ tasks.length }}</p>
 
   </div>
 </template>

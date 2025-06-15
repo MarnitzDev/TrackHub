@@ -22,12 +22,17 @@ const onStart = () => {
 
 const onEnd = (e: any) => {
   dragging.value = false;
-  onCardDrop(e.to.id, {
-    removedIndex: e.oldIndex,
-    addedIndex: e.newIndex,
-    payload: e.item.__draggable_context.element
-  })
+  const updatedColumns = [...columns.value];
+  const sourceColumnIndex = updatedColumns.findIndex(col => col.id === e.from.id);
+  const targetColumnIndex = updatedColumns.findIndex(col => col.id === e.to.id);
+
+  if (sourceColumnIndex !== -1 && targetColumnIndex !== -1) {
+    const [movedTask] = updatedColumns[sourceColumnIndex].tasks.splice(e.oldIndex, 1);
+    updatedColumns[targetColumnIndex].tasks.splice(e.newIndex, 0, movedTask);
+    updateColumnPositions(updatedColumns);
+  }
 }
+
 
 const addNewTask = (columnId: number) => {
   addTask(columnId, `New Task ${Date.now()}`, 'Task description');
@@ -40,6 +45,7 @@ const addNewTask = (columnId: number) => {
     <div class="flex space-x-4">
       <div v-for="column in columns" :key="column.id" class="bg-gray-100 p-4 rounded-lg w-64">
         <h2 class="font-bold mb-2">{{ column.title }}</h2>
+
         <button class="btn btn-secondary mb-2" @click="addNewTask(column.id)">Add Task</button>
         <VueDraggableNext
             :list="column.tasks"

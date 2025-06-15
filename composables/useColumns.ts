@@ -1,7 +1,14 @@
-
 import { ref } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useUserStore } from '~/stores/userStore'
+
+interface Column {
+    id: number | string;
+    title: string;
+    position: number;
+    tasks: any[];
+    projectId: string;
+}
 
 export const useColumns = () => {
     const { isUserGuest } = useAuth()
@@ -13,9 +20,9 @@ export const useColumns = () => {
     const fetchColumns = async (projectId: string) => {
         if (isUserGuest.value) {
             columns.value = [
-                { id: 1, title: 'To Do', position: 0, tasks: [] },
-                { id: 2, title: 'In Progress', position: 1, tasks: [] },
-                { id: 3, title: 'Done', position: 2, tasks: [] }
+                { id: 'guest-1', title: 'To Do', position: 0, tasks: [], projectId },
+                { id: 'guest-2', title: 'In Progress', position: 1, tasks: [], projectId },
+                { id: 'guest-3', title: 'Done', position: 2, tasks: [], projectId }
             ]
             return
         }
@@ -26,7 +33,20 @@ export const useColumns = () => {
         try {
             const response = await fetch(`/api/columns?projectId=${projectId}`)
             if (!response.ok) throw new Error('Failed to fetch columns')
-            columns.value = await response.json()
+            const fetchedColumns = await response.json()
+
+            // Fetch tasks for each column
+            const tasksPromises = fetchedColumns.map(async (column: Column) => {
+                const tasksResponse = await fetch(`/api/tasks?columnId=${column.id}`)
+                if (tasksResponse.ok) {
+                    column.tasks = await tasksResponse.json()
+                } else {
+                    column.tasks = []
+                }
+                return column
+            })
+
+            columns.value = await Promise.all(tasksPromises)
         } catch (e) {
             console.error('Error fetching columns:', e)
             error.value = 'Failed to fetch columns'
@@ -36,6 +56,23 @@ export const useColumns = () => {
     }
 
     const addColumn = async (projectId: string, title: string = 'New Column') => {
+        if (!projectId || !title) {
+            error.value = 'Column title and project ID are required'
+            return null
+        }
+
+        if (isUserGuest.value) {
+            const newColumn: Column = {
+                id: `guest-${Date.now()}`,
+                title,
+                position: columns.value.length,
+                tasks: [],
+                projectId
+            }
+            columns.value.push(newColumn)
+            return newColumn
+        }
+
         loading.value = true
         error.value = null
         try {
@@ -62,7 +99,7 @@ export const useColumns = () => {
         }
     }
 
-    const removeColumn = async (columnId: number) => {
+    const removeColumn = async (columnId: number | string) => {
         if (isUserGuest.value) {
             columns.value = columns.value.filter(col => col.id !== columnId)
             return
@@ -72,7 +109,7 @@ export const useColumns = () => {
         error.value = null
 
         try {
-            const response = await fetch(`/api/columns?id=${columnId}`, {
+            const response = await fetch(`/api/columns/${columnId}`, {
                 method: 'DELETE'
             })
             if (!response.ok) throw new Error('Failed to remove column')
@@ -96,11 +133,10 @@ export const useColumns = () => {
 
         try {
             const updatePromises = updatedColumns.map(column =>
-                fetch('/api/columns', {
+                fetch(`/api/columns/${column.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        id: column.id,
                         title: column.title,
                         position: column.position
                     })
@@ -116,6 +152,57 @@ export const useColumns = () => {
         }
     }
 
+    const addTaskToColumn = async (columnId: string | number, task: Omit<Task, 'id'>) => {
+        const column = columns.value.find(col => col.id === columnId)
+        if (!column) {
+            error.value = 'Column not found'
+            return null
+        }
+
+        if (isUserGuest.value) {
+            const newTask: Task = {
+                ...task,
+                id: `guest-task-${Date.now()}`,
+                columnId
+            }
+            column.tasks.push(newTask)
+            return newTask
+        }
+
+        loading.value = true
+        error.value = null
+
+        try {
+            const response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ...task, columnId }),
+            })
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to add task')
+            }
+            const newTask = await response.json()
+            column.tasks.push(newTask)
+            return newTask
+        } catch (e) {
+            console.error('Error adding task:', e)
+            error.value = 'Failed to add task'
+            return null
+        } finally {
+            loading.value = false
+        }
+    }
+
+    const getColumnTasks = computed(() => {
+        return (columnId: string | number) => {
+            const column = columns.value.find(col => col.id === columnId)
+            return column ? column.tasks : []
+        }
+    })
+
     return {
         columns,
         loading,
@@ -123,6 +210,8 @@ export const useColumns = () => {
         fetchColumns,
         addColumn,
         removeColumn,
-        updateColumnPositions
+        updateColumnPositions,
+        addTaskToColumn,
+        getColumnTasks
     }
 }

@@ -1,85 +1,61 @@
-import { useUserStore } from '~/stores/userStore'
-import { useAuth } from '~/composables/useAuth'
 import { ref } from 'vue'
+import { useAuth } from '~/composables/useAuth'
+import { useUserStore } from '~/stores/userStore'
 
 interface Task {
     id: string
-    profile_id: string
     title: string
     description: string
     status: string
-    column_id: string
     position: number
-    created_at: string
-    updated_at: string
+    projectId: string
+    columnId: string
+    userId: string
+    createdAt: string
+    updatedAt: string
 }
 
 export const useTasks = () => {
+    const { user } = useAuth()
     const userStore = useUserStore()
-    const { isUserGuest } = useAuth()
     const tasks = ref<Task[]>([])
     const loading = ref(false)
     const error = ref<string | null>(null)
-    const guestMessage = ref('')
 
     const fetchTasks = async (projectId: string) => {
-        if (isUserGuest.value) {
-            tasks.value = [] // or some default tasks for guest mode
-            return tasks.value
-        }
-
-        if (!userStore.user) {
-            error.value = 'User not authenticated'
-            return
-        }
-
+        if (!user.value) return
         loading.value = true
         error.value = null
-
         try {
-            const { data } = await useFetch('/api/tasks', {
-                method: 'GET',
-                params: { userId: userStore.user.id, projectId }
-            })
-            tasks.value = data.value as Task[]
+            const response = await fetch(`/api/tasks?projectId=${projectId}`)
+            if (!response.ok) throw new Error('Failed to fetch tasks')
+            tasks.value = await response.json()
+            console.log('Fetched tasks:', tasks.value)
         } catch (e) {
             console.error('Error fetching tasks:', e)
-            tasks.value = []
-            error.value = 'Failed to fetch tasks'
+            error.value = 'Failed to load tasks'
         } finally {
             loading.value = false
         }
     }
 
-    const addTask = async (taskData: Omit<Task, 'id' | 'profile_id' | 'created_at' | 'updated_at'>) => {
-        if (isUserGuest.value) {
-            const newTask: Task = {
-                ...taskData,
-                id: `temp_${Date.now()}`,
-                profile_id: 'guest',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            }
-            tasks.value.push(newTask)
-            guestMessage.value = 'Task added locally. Sign in to save your tasks.'
-            return newTask
-        }
-
-        if (!userStore.user) {
-            error.value = 'User not authenticated'
-            return null
-        }
-
+    const addTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user.value) return null
         loading.value = true
         error.value = null
-
         try {
-            const { data } = await useFetch('/api/tasks', {
+            const response = await fetch('/api/tasks', {
                 method: 'POST',
-                body: { ...taskData, userId: userStore.user.id }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...taskData,
+                    userId: user.value.id
+                })
             })
-            const newTask = data.value as Task
+            if (!response.ok) throw new Error('Failed to add task')
+            const newTask = await response.json()
             tasks.value.push(newTask)
+            console.log('Added task:', newTask)
             return newTask
         } catch (e) {
             console.error('Error adding task:', e)
@@ -90,38 +66,24 @@ export const useTasks = () => {
         }
     }
 
-    const updateTask = async (taskId: string, updates: Partial<Omit<Task, 'id' | 'profile_id' | 'created_at' | 'updated_at'>>) => {
-        if (isUserGuest.value) {
-            const index = tasks.value.findIndex(t => t.id === taskId)
-            if (index !== -1) {
-                tasks.value[index] = { ...tasks.value[index], ...updates, updated_at: new Date().toISOString() }
-            }
-            guestMessage.value = 'Task updated locally. Sign in to save your changes.'
-            return tasks.value[index]
-        }
-
-        if (!userStore.user) {
-            error.value = 'User not authenticated'
-            return null
-        }
-
+    const updateTask = async (taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>) => {
+        if (!user.value) return null
         loading.value = true
         error.value = null
-
         try {
-            const { data } = await useFetch('/api/tasks', {
+            const response = await fetch(`/api/tasks/${taskId}`, {
                 method: 'PUT',
-                body: { taskId, updates, userId: userStore.user.id }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...updates, userId: user.value.id })
             })
-            const updatedTask = data.value as Task
-            const index = tasks.value.findIndex(t => t.id === taskId)
-            if (index !== -1) {
-                tasks.value[index] = updatedTask
-            }
+            if (!response.ok) throw new Error('Failed to update task')
+            const updatedTask = await response.json()
+            tasks.value = tasks.value.map(t => t.id === taskId ? updatedTask : t)
+            console.log('Updated task:', updatedTask)
             return updatedTask
         } catch (e) {
-            error.value = 'Failed to update task'
             console.error('Error updating task:', e)
+            error.value = 'Failed to update task'
             return null
         } finally {
             loading.value = false
@@ -129,30 +91,22 @@ export const useTasks = () => {
     }
 
     const deleteTask = async (taskId: string) => {
-        if (isUserGuest.value) {
-            tasks.value = tasks.value.filter(t => t.id !== taskId)
-            guestMessage.value = 'Task deleted locally. Sign in to save your changes.'
-            return true
-        }
-
-        if (!userStore.user) {
-            error.value = 'User not authenticated'
-            return false
-        }
-
+        if (!user.value) return false
         loading.value = true
         error.value = null
-
         try {
-            await useFetch('/api/tasks', {
+            const response = await fetch(`/api/tasks/${taskId}`, {
                 method: 'DELETE',
-                body: { taskId, userId: userStore.user.id }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.value.id })
             })
+            if (!response.ok) throw new Error('Failed to delete task')
             tasks.value = tasks.value.filter(t => t.id !== taskId)
+            console.log('Deleted task:', taskId)
             return true
         } catch (e) {
-            error.value = 'Failed to delete task'
             console.error('Error deleting task:', e)
+            error.value = 'Failed to delete task'
             return false
         } finally {
             loading.value = false
@@ -163,7 +117,6 @@ export const useTasks = () => {
         tasks,
         loading,
         error,
-        guestMessage,
         fetchTasks,
         addTask,
         updateTask,
