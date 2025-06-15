@@ -30,13 +30,5 @@ export default defineNuxtConfig({
         redirectUri: process.env.AUTH0_CALLBACK_URL,
       }
     },
-  },
-  nitro: {
-    externals: {
-      inline: ['pg']
-    }
-  },
-  build: {
-    transpile: ['pg']
   }
 })

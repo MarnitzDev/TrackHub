@@ -29,7 +29,6 @@
     "dotenv": "^16.5.0",
     "eslint": "^9.28.0",
     "nuxt": "^3.17.5",
-    "pg": "^8.16.0",
     "pinia-plugin-persistedstate": "^4.3.0",
     "tailwindcss": "^4.1.8",
     "vue": "^3.5.16",
@@ -39,7 +38,6 @@
   "packageManager": "pnpm@9.14.4+sha512.c8180b3fbe4e4bca02c94234717896b5529740a6cbadf19fa78254270403ea2f27d4e1d46a08a0f56c89b63dc8ebfd3ee53326da720273794e6200fcf0d184ab",
   "devDependencies": {
     "@types/node": "^24.0.1",
-    "@types/pg": "^8.15.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
