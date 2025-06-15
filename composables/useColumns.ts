@@ -1,5 +1,4 @@
 import { useAuth } from '~/composables/useAuth'
-import { getPool } from '~/server/database'
 import { ref } from 'vue'
 import { useUserStore } from '~/stores/userStore'
 
