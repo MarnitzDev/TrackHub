@@ -35,31 +35,21 @@ export const useColumns = () => {
         }
     }
 
-    const addColumn = async (columnData: { title: string, projectId: string }) => {
-        if (isUserGuest.value) {
-            const newColumn = {
-                id: columns.value.length + 1,
-                title: columnData.title,
-                position: columns.value.length,
-                tasks: []
-            }
-            columns.value.push(newColumn)
-            return newColumn
-        }
-
+    const addColumn = async (projectId: string, title: string = 'New Column') => {
         loading.value = true
         error.value = null
-
         try {
             const response = await fetch('/api/columns', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...columnData,
-                    position: columns.value.length
-                })
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ projectId, title }),
             })
-            if (!response.ok) throw new Error('Failed to add column')
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to add column')
+            }
             const newColumn = await response.json()
             columns.value.push(newColumn)
             return newColumn

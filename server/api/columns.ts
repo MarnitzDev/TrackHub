@@ -21,10 +21,21 @@ export default defineEventHandler(async (event) => {
             case 'POST':
                 // Add a new column
                 const newColumnData = await readBody(event)
+                if (!newColumnData.title || !newColumnData.projectId) {
+                    throw new Error('Column title and project ID are required')
+                }
+
+                // Get the highest position for the current project
+                const highestPositionColumn = await prisma.column.findFirst({
+                    where: { projectId: newColumnData.projectId },
+                    orderBy: { position: 'desc' },
+                })
+                const newPosition = (highestPositionColumn?.position ?? -1) + 1
+
                 return await prisma.column.create({
                     data: {
                         title: newColumnData.title,
-                        position: newColumnData.position,
+                        position: newPosition,
                         projectId: newColumnData.projectId
                     }
                 })
@@ -32,6 +43,9 @@ export default defineEventHandler(async (event) => {
             case 'PUT':
                 // Update a column
                 const updateData = await readBody(event)
+                if (!updateData.id) {
+                    throw new Error('Column ID is required for update')
+                }
                 return await prisma.column.update({
                     where: { id: updateData.id },
                     data: {

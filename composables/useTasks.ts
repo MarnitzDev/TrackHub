@@ -22,7 +22,7 @@ export const useTasks = () => {
     const error = ref<string | null>(null)
     const guestMessage = ref('')
 
-    const fetchTasks = async () => {
+    const fetchTasks = async (projectId: string) => {
         if (isUserGuest.value) {
             guestMessage.value = 'You are using guest mode. Tasks will not be saved.'
             return
@@ -39,7 +39,7 @@ export const useTasks = () => {
         try {
             const { data } = await useFetch('/api/tasks', {
                 method: 'GET',
-                params: { userId: userStore.user.id }
+                params: { userId: userStore.user.id, projectId }
             })
             tasks.value = data.value as Task[]
         } catch (e) {

@@ -4,13 +4,19 @@ import draggable from 'vuedraggable'
 import { useAuth } from '~/composables/useAuth'
 import { useTasks } from '~/composables/useTasks'
 import { useColumns } from '~/composables/useColumns'
+import { useProjects } from '~/composables/useProjects'
 import TaskModal from '~/components/TaskModal.vue'
 import ColumnComponent from '~/components/ColumnComponent.vue'
 
 // Use composables
 const { isUserGuest } = useAuth()
-const { tasks, loading: tasksLoading, error: tasksError, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
+const { projects, currentProject, loading: projectsLoading, error: projectsError, fetchProjects, createProject, setCurrentProject } = useProjects()
 const { columns: rawColumns, loading: columnsLoading, error: columnsError, fetchColumns, addColumn, updateColumnPositions } = useColumns()
+const { tasks, loading: tasksLoading, error: tasksError, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
+
+const props = defineProps<{
+  currentProject: { id: string; title: string }
+}>()
 
 // Define interfaces for Task and Column
 interface Task {
@@ -29,18 +35,19 @@ interface Column {
 
 // Computed property to combine columns and tasks
 const processedColumns = computed<Column[]>(() => {
-  if (!rawColumns.value || !tasks.value) return []
+  if (!rawColumns.value || !tasks.value || !Array.isArray(tasks.value)) return []
 
   return rawColumns.value.map(column => ({
     ...column,
-    tasks: tasks.value.filter(task => task.status === column.title.toLowerCase().replace(' ', '_'))
+    tasks: Array.isArray(tasks.value)
+        ? tasks.value.filter(task => task.status === column.title.toLowerCase().replace(' ', '_'))
+        : []
   }))
 })
 
 // Use watchEffect for any side effects when columns or tasks change
 watchEffect(() => {
   console.log('Columns updated:', processedColumns.value)
-  // Any other side effects you need to perform when columns or tasks change
 })
 
 // Log changes in task and column order
@@ -81,7 +88,7 @@ const handleAddTask = async (newTaskData: { title: string, description: string, 
 
     const addedTask = await addTask(taskToAdd)
     if (addedTask) {
-      await fetchTasks()
+      await fetchTasks(currentProject.value?.id)
     } else {
       console.error('Failed to add task')
     }
@@ -100,23 +107,14 @@ const startAddingColumn = () => {
 
 // Function to handle adding a new column
 const handleAddColumn = async () => {
-  if (newColumnTitle.value.trim()) {
-    const addedColumn = await addColumn({ title: newColumnTitle.value.trim() })
-    if (addedColumn) {
+  if (newColumnTitle.value.trim() && currentProject.value) {
+    try {
+      await addColumn(currentProject.value.id, newColumnTitle.value.trim())
       isAddingColumn.value = false
       newColumnTitle.value = ''
-      await fetchColumns()
-
-      if (isUserGuest.value) {
-        rawColumns.value.push({
-          id: addedColumn.id,
-          title: addedColumn.title,
-          position: rawColumns.value.length,
-          tasks: []
-        })
-      }
-    } else {
-      console.error('Failed to add column')
+      await fetchColumns(currentProject.value.id)
+    } catch (e) {
+      console.error('Error adding column:', e)
     }
   }
 }
@@ -149,24 +147,60 @@ const handleTaskSave = async (updatedTask: Task) => {
       })
     }
   }
-  await fetchTasks()
+  await fetchTasks(currentProject.value?.id)
 }
 
 const handleTaskDelete = async (taskId: number) => {
   if (selectedColumnId.value !== null) {
     const success = await deleteTask(taskId)
     if (success) {
-      await fetchTasks()
+      await fetchTasks(currentProject.value?.id)
     } else {
       console.error('Failed to delete task')
     }
   }
 }
 
-// Fetch tasks and columns on component mount
+// New state for project creation
+const isCreatingProject = ref(false)
+const newProjectTitle = ref('')
+
+// Function to handle project creation
+const handleCreateProject = async () => {
+  if (newProjectTitle.value.trim()) {
+    const newProject = await createProject(newProjectTitle.value.trim())
+    if (newProject) {
+      setCurrentProject(newProject.id)
+      isCreatingProject.value = false
+      newProjectTitle.value = ''
+    }
+  }
+}
+
+// Fetch projects, tasks, and columns on component mount
 onMounted(async () => {
-  await fetchColumns()
-  await fetchTasks()
+  await fetchProjects()
+  if (projects.value.length > 0) {
+    setCurrentProject(projects.value[0].id)
+    await fetchProjectData()
+  }
+})
+
+// Function to fetch both columns and tasks
+const fetchProjectData = async () => {
+  if (currentProject.value) {
+    await Promise.all([
+      fetchColumns(currentProject.value.id),
+      fetchTasks(currentProject.value.id)
+    ])
+  }
+}
+
+// Watch for changes in currentProject
+watchEffect(() => {
+  if (currentProject.value) {
+    fetchProjectData()
+  }
 })
 </script>
 
@@ -175,56 +209,81 @@ onMounted(async () => {
     <div v-if="isUserGuest" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
       <p>You are using guest mode. Your changes will not be saved. <UButton color="primary" @click="$router.push('/auth/login')">Sign in to save your work</UButton></p>
     </div>
-    <div v-if="columnsLoading || tasksLoading">Loading board...</div>
-    <div v-else-if="columnsError || tasksError">Error: {{ columnsError || tasksError }}</div>
-    <div v-else class="flex space-x-4">
-      <!-- Draggable container for columns -->
-      <draggable
-          v-model="processedColumns"
-          group="columns"
-          item-key="id"
-          class="flex space-x-4"
-          @change="logColumnChange"
-      >
-        <template #item="{ element: column }">
-          <ColumnComponent
-              :column="column"
-              @task-change="log"
-              @add-task="handleAddTask"
-              @open-task-modal="openTaskModal"
-          />
-        </template>
-      </draggable>
 
-      <!-- New column creation UI -->
-      <div v-if="isAddingColumn" class="bg-gray-100 p-4 rounded-lg w-64 flex-shrink-0">
-        <UInput
-            v-model="newColumnTitle"
-            variant="none"
-            placeholder="Enter column title"
-            class="w-full mb-2"
-        />
-        <div class="flex space-x-2 mt-2">
-          <UButton color="primary" @click="handleAddColumn">Add Column</UButton>
-          <UButton
-              icon="i-lucide-x"
-              color="neutral"
-              variant="soft"
-              @click="cancelAddingColumn"
-          />
-        </div>
+    <div v-if="projectsLoading || columnsLoading || tasksLoading">Loading...</div>
+    <div v-else-if="projectsError || columnsError || tasksError">Error: {{ projectsError || columnsError || tasksError }}</div>
+    <div v-else>
+      <!-- Project selection -->
+      <div v-if="projects.length > 0" class="mb-4">
+        <label for="project-select" class="mr-2">Select Project:</label>
+        <select id="project-select" v-model="currentProject" @change="setCurrentProject($event.target.value)">
+          <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.title }}</option>
+        </select>
       </div>
 
-      <!-- Add Column button -->
-      <UButton
-          v-else
-          color="neutral"
-          variant="soft"
-          class="h-12 px-4 self-start flex-shrink-0"
-          @click="startAddingColumn"
-      >
-        + Add Column
-      </UButton>
+      <!-- Create project UI -->
+      <div v-if="projects.length === 0 || isCreatingProject" class="mb-4">
+        <input v-model="newProjectTitle" placeholder="Enter project title" class="mr-2" />
+        <UButton color="primary" @click="handleCreateProject">Create Project</UButton>
+      </div>
+
+      <!-- Show create project button if no projects exist -->
+      <UButton v-if="projects.length === 0 && !isCreatingProject" color="primary" @click="isCreatingProject = true">Create Your First Project</UButton>
+
+      <!-- Board content -->
+      <div v-if="currentProject" class="mt-4">
+        <h2 class="text-2xl font-bold mb-4">{{ currentProject.title }}</h2>
+
+        <div class="flex space-x-4">
+          <!-- Draggable container for columns -->
+          <draggable
+              v-model="processedColumns"
+              group="columns"
+              item-key="id"
+              class="flex space-x-4"
+              @change="logColumnChange"
+          >
+            <template #item="{ element: column }">
+              <ColumnComponent
+                  :column="column"
+                  @task-change="log"
+                  @add-task="handleAddTask"
+                  @open-task-modal="openTaskModal"
+              />
+            </template>
+          </draggable>
+
+          <!-- New column creation UI -->
+          <div v-if="isAddingColumn" class="bg-gray-100 p-4 rounded-lg w-64 flex-shrink-0">
+            <UInput
+                v-model="newColumnTitle"
+                variant="none"
+                placeholder="Enter column title"
+                class="w-full mb-2"
+            />
+            <div class="flex space-x-2 mt-2">
+              <UButton color="primary" @click="handleAddColumn">Add Column</UButton>
+              <UButton
+                  icon="i-lucide-x"
+                  color="neutral"
+                  variant="soft"
+                  @click="cancelAddingColumn"
+              />
+            </div>
+          </div>
+
+          <!-- Add Column button -->
+          <UButton
+              v-if="currentProject && !isAddingColumn"
+              color="neutral"
+              variant="soft"
+              class="h-12 px-4 self-start flex-shrink-0"
+              @click="startAddingColumn"
+          >
+            + Add Column
+          </UButton>
+        </div>
+      </div>
     </div>
 
     <TaskModal
