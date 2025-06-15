@@ -35,5 +35,8 @@ export default defineNuxtConfig({
     externals: {
       inline: ['pg']
     }
+  },
+  build: {
+    transpile: ['pg']
   }
 })

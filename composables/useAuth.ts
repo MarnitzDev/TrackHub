@@ -1,18 +1,37 @@
-import { computed, ref, watch } from 'vue'
+
 import { useUserStore } from '~/stores/userStore'
 import { useAuth0 } from '@auth0/auth0-vue'
+import { computed, ref, watch, onMounted } from 'vue'
 
 export const useAuth = () => {
     const auth0 = useAuth0()
     const userStore = useUserStore()
 
     const isUserGuest = ref(false)
+    const isLoading = ref(true)
+
+    const isAuthenticated = computed(() => {
+        return userStore.isAuthenticated || isUserGuest.value
+    })
+
+    const user = computed(() => {
+        return userStore.user || auth0.user.value
+    })
+
+    watch(auth0.isAuthenticated, (newValue) => {
+        console.log('Auth0 isAuthenticated changed:', newValue)
+        if (newValue) {
+            loadUser()
+        }
+    })
 
     const signInWithAuth0 = () => {
+        console.log('Initiating Auth0 login')
         auth0.loginWithRedirect()
     }
 
     const signOut = async () => {
+        console.log('Signing out')
         if (isUserGuest.value) {
             userStore.clearUser()
             isUserGuest.value = false
@@ -23,32 +42,67 @@ export const useAuth = () => {
     }
 
     const continueAsGuest = () => {
+        console.log('Continuing as guest')
         userStore.setGuest()
         isUserGuest.value = true
     }
 
     const loadUser = async () => {
+        console.log('Loading user')
         if (auth0.isAuthenticated.value && auth0.user.value) {
+            console.log('Setting user in store:', auth0.user.value)
             userStore.setUser(auth0.user.value)
+        } else {
+            console.log('No authenticated user to load')
         }
     }
 
-    // Use watch to react to authentication state changes
-    watch(() => auth0.isAuthenticated.value, (isAuthenticated) => {
-        if (isAuthenticated && auth0.user.value) {
-            userStore.setUser(auth0.user.value)
-        } else {
-            userStore.clearUser()
+    const getAccessToken = async () => {
+        try {
+            console.log('Getting access token')
+            const token = await auth0.getAccessTokenSilently()
+            console.log('Access token retrieved')
+            return token
+        } catch (error) {
+            console.error('Error getting access token:', error)
+            return null
         }
-    }, { immediate: true })
+    }
+
+    const checkAuth = async () => {
+        isLoading.value = true
+        try {
+            console.log('Checking authentication')
+            await auth0.checkSession()
+            if (auth0.isAuthenticated.value) {
+                console.log('User is authenticated, loading user')
+                await loadUser()
+            } else {
+                console.log('User is not authenticated')
+                userStore.clearUser()
+            }
+        } catch (error) {
+            console.error('Error checking authentication:', error)
+            userStore.clearUser()
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    onMounted(() => {
+        checkAuth()
+    })
 
     return {
-        user: computed(() => auth0.user.value),
-        isAuthenticated: computed(() => auth0.isAuthenticated.value),
+        isAuthenticated,
         isUserGuest: computed(() => isUserGuest.value),
+        user,
+        isLoading,
         signInWithAuth0,
         signOut,
         continueAsGuest,
-        loadUser
+        loadUser,
+        getAccessToken,
+        checkAuth
     }
 }

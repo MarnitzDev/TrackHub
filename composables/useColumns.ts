@@ -1,20 +1,7 @@
+import { useAuth } from '~/composables/useAuth'
+import { getPool } from '~/server/database'
 import { ref } from 'vue'
 import { useUserStore } from '~/stores/userStore'
-import { useAuth } from '~/composables/useAuth'
-import { pool } from '~/config/database'
-
-interface Task {
-    id: number
-    title: string
-    description: string
-}
-
-interface Column {
-    id: number
-    title: string
-    position: number
-    tasks: Task[]
-}
 
 export const useColumns = () => {
     const userStore = useUserStore()
@@ -42,6 +29,7 @@ export const useColumns = () => {
         error.value = null
 
         try {
+            const pool = getPool()
             const result = await pool.query(
                 'SELECT * FROM columns WHERE profile_id = $1 ORDER BY position ASC',
                 [userStore.user.id]

@@ -1,18 +1,17 @@
-import { ref, computed } from 'vue'
 import { useUserStore } from '~/stores/userStore'
 import { useAuth } from '~/composables/useAuth'
-import { pool } from '~/config/database'
+import { ref } from 'vue'
 
 interface Task {
-    id?: string
+    id: string
     profile_id: string
     title: string
     description: string
-    status: 'todo' | 'in_progress' | 'done'
-    column_id: number
+    status: string
+    column_id: string
     position: number
-    created_at?: string
-    updated_at?: string
+    created_at: string
+    updated_at: string
 }
 
 export const useTasks = () => {
@@ -38,11 +37,11 @@ export const useTasks = () => {
         error.value = null
 
         try {
-            const result = await pool.query(
-                'SELECT * FROM tasks WHERE profile_id = $1 ORDER BY position ASC',
-                [userStore.user.id]
-            )
-            tasks.value = result.rows
+            const { data } = await useFetch('/api/tasks', {
+                method: 'GET',
+                params: { userId: userStore.user.id }
+            })
+            tasks.value = data.value as Task[]
         } catch (e) {
             console.error('Error fetching tasks:', e)
             tasks.value = []
@@ -75,11 +74,11 @@ export const useTasks = () => {
         error.value = null
 
         try {
-            const result = await pool.query(
-                'INSERT INTO tasks (profile_id, title, description, status, column_id, position) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-                [userStore.user.id, taskData.title, taskData.description, taskData.status, taskData.column_id, taskData.position]
-            )
-            const newTask = result.rows[0]
+            const { data } = await useFetch('/api/tasks', {
+                method: 'POST',
+                body: { ...taskData, userId: userStore.user.id }
+            })
+            const newTask = data.value as Task
             tasks.value.push(newTask)
             return newTask
         } catch (e) {
@@ -110,13 +109,11 @@ export const useTasks = () => {
         error.value = null
 
         try {
-            const setClause = Object.keys(updates).map((key, index) => `${key} = $${index + 3}`).join(', ')
-            const values = Object.values(updates)
-            const result = await pool.query(
-                `UPDATE tasks SET ${setClause}, updated_at = NOW() WHERE id = $1 AND profile_id = $2 RETURNING *`,
-                [taskId, userStore.user.id, ...values]
-            )
-            const updatedTask = result.rows[0]
+            const { data } = await useFetch('/api/tasks', {
+                method: 'PUT',
+                body: { taskId, updates, userId: userStore.user.id }
+            })
+            const updatedTask = data.value as Task
             const index = tasks.value.findIndex(t => t.id === taskId)
             if (index !== -1) {
                 tasks.value[index] = updatedTask
@@ -147,10 +144,10 @@ export const useTasks = () => {
         error.value = null
 
         try {
-            await pool.query(
-                'DELETE FROM tasks WHERE id = $1 AND profile_id = $2',
-                [taskId, userStore.user.id]
-            )
+            await useFetch('/api/tasks', {
+                method: 'DELETE',
+                body: { taskId, userId: userStore.user.id }
+            })
             tasks.value = tasks.value.filter(t => t.id !== taskId)
             return true
         } catch (e) {

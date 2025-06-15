@@ -1,26 +1,27 @@
+
 import { defineStore } from 'pinia'
 
 export const useUserStore = defineStore('user', {
     state: () => ({
         user: null,
-        isGuest: false,
+        isAuthenticated: false,
     }),
-    getters: {
-        isAuthenticated: (state) => !!state.user || state.isGuest,
-        userMetadata: (state) => state.user,
-    },
     actions: {
         setUser(userData) {
+            console.log('UserStore: Setting user', userData)
             this.user = userData
-            this.isGuest = false
+            this.isAuthenticated = true
         },
         clearUser() {
+            console.log('UserStore: Clearing user')
             this.user = null
-            this.isGuest = false
+            this.isAuthenticated = false
         },
         setGuest() {
-            this.isGuest = true
-            this.user = null
-        },
+            console.log('UserStore: Setting guest user')
+            this.user = { name: 'Guest' }
+            this.isAuthenticated = true
+        }
     },
+    persist: true, // This will persist the store state in localStorage
 })

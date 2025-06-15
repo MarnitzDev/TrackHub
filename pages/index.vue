@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useUserStore } from '~/stores/userStore'
-import { pool } from '~/config/database'
 
 const connectionStatus = ref('Checking connection...')
 const userStore = useUserStore()
@@ -10,14 +9,12 @@ const userMetadata = computed(() => userStore.userMetadata)
 
 onMounted(async () => {
   try {
-    // Attempt to query the PostgreSQL database
-    const result = await pool.query('SELECT * FROM profiles LIMIT 1')
-
-    connectionStatus.value = 'Connected to PostgreSQL successfully!'
-    console.log('Sample data:', result.rows)
+    // Fetch connection status from the server
+    const { data } = await useFetch('/api/db-status')
+    connectionStatus.value = data.value?.status || 'Failed to check connection'
   } catch (error) {
-    connectionStatus.value = 'Failed to connect to PostgreSQL'
-    console.error('PostgreSQL connection error:', error)
+    connectionStatus.value = 'Failed to check connection'
+    console.error('Error checking connection:', error)
   }
 })
 </script>
