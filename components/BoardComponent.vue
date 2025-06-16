@@ -12,13 +12,13 @@ import BoardColumn from '~/components/BoardColumn.vue'
 const { isUserGuest } = useAuth()
 const { projects, loading: projectsLoading, error: projectsError, fetchProjects, createProject, setCurrentProject } = useProjects()
 const { columns: rawColumns, loading: columnsLoading, error: columnsError, fetchColumns, addColumn, updateColumnPositions } = useColumns()
-const { tasks, loading: tasksLoading, error: tasksError, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
+const { tasks, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
 
 // Use ref for currentProject instead of getting it from useProjects
 const currentProject = ref(null)
 
 const props = defineProps<{
-  currentProject: { id: string; title: string }
+  currentProject?: { id: string; title: string }
 }>()
 
 // Define interfaces for Task and Column
@@ -199,18 +199,24 @@ const handleCreateProject = async () => {
 
 // Fetch projects, tasks, and columns on component mount
 onMounted(async () => {
-  await fetchProjects()
+  await fetchProjects();
   if (projects.value.length > 0) {
-    currentProject.value = projects.value[0]
-    await fetchProjectData()
+    currentProject.value = projects.value[0];
+    await fetchProjectData();
   }
-})
+});
 
 // Function to fetch both columns and tasks
 const fetchProjectData = async () => {
   if (currentProject.value) {
     await fetchColumns(currentProject.value.id);
     await fetchTasks(currentProject.value.id);
+
+    // After fetching tasks, distribute them to their respective columns
+    processedColumns.value = rawColumns.value.map(column => ({
+      ...column,
+      tasks: tasks.value.filter(task => task.columnId === column.id)
+    }));
   } else {
     console.error('No current project selected');
   }
@@ -218,18 +224,44 @@ const fetchProjectData = async () => {
 
 const handleProjectChange = async (event: Event) => {
   const select = event.target as HTMLSelectElement;
-  const selectedIndex = select.selectedIndex;
-  const selectedProject = projects.value[selectedIndex];
-  currentProject.value = selectedProject;
-  await fetchProjectData();
+  const selectedProjectId = select.value;
+  const selectedProject = projects.value.find(p => p.id === selectedProjectId);
+  if (selectedProject) {
+    currentProject.value = selectedProject;
+    await fetchProjectData();
+  }
 }
 
-// // Watch for changes in currentProject
-// watchEffect(async () => {
-//   if (currentProject.value) {
-//     await fetchProjectData()
-//   }
-// })
+const handleTaskChange = async ({ task, newColumnId, oldColumnId, newIndex, oldIndex }) => {
+  if (newColumnId && oldColumnId) {
+    // Task moved between columns
+    const oldColumn = columns.value.find(col => col.id === oldColumnId);
+    const newColumn = columns.value.find(col => col.id === newColumnId);
+
+    if (oldColumn && newColumn) {
+      // Remove task from old column
+      oldColumn.tasks = oldColumn.tasks.filter(t => t.id !== task.id);
+
+      // Add task to new column
+      newColumn.tasks.splice(newIndex, 0, task);
+
+      // Update task in the backend
+      await updateTask(task.id, { columnId: newColumnId });
+    }
+  } else if (newIndex !== undefined) {
+    // Task reordered within the same column
+    const column = columns.value.find(col => col.id === task.columnId);
+    if (column) {
+      // Remove task from its old position and insert it at the new position
+      column.tasks = column.tasks.filter(t => t.id !== task.id);
+      column.tasks.splice(newIndex, 0, task);
+
+      // Update task order in the backend
+      // You might want to update all tasks' positions in this column
+      await updateTaskPositions(column.id, column.tasks.map(t => t.id));
+    }
+  }
+};
 </script>
 
 <template>
@@ -244,8 +276,10 @@ const handleProjectChange = async (event: Event) => {
       <!-- Project selection -->
       <div v-if="projects.length > 0" class="mb-4">
         <label for="project-select" class="mr-2">Select Project:</label>
-        <select id="project-select" v-model="currentProject" @change="handleProjectChange($event)">
-          <option v-for="project in projects" :key="project.id" :value="project">{{ project.title }}</option>
+        <select id="project-select" @change="handleProjectChange($event)">
+          <option v-for="project in projects" :key="project.id" :value="project.id">
+            {{ project.title }}
+          </option>
         </select>
       </div>
 
@@ -273,8 +307,10 @@ const handleProjectChange = async (event: Event) => {
           >
             <template #item="{ element: column }">
               <BoardColumn
+                  v-for="column in processedColumns"
+                  :key="column.id"
                   :column="column"
-                  @task-change="log"
+                  @task-change="handleTaskChange"
                   @add-task="handleAddTask"
                   @open-task-modal="openTaskModal"
               />

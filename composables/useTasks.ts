@@ -30,9 +30,8 @@ export const useTasks = () => {
         }
 
         if (!projectId) {
-            console.error('Project ID is required')
-            error.value = 'Project ID is required'
-            return
+            console.error('Project ID is required to fetch tasks');
+            return;
         }
 
         loading.value = true

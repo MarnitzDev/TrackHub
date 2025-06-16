@@ -15,7 +15,7 @@ interface Column {
 }
 
 const props = defineProps<{
-  column: Column
+  column: Column & { tasks: Task[] }
 }>()
 
 const emit = defineEmits(['taskChange', 'addTask', 'openTaskModal'])
@@ -39,8 +39,22 @@ const onStart = () => {
 
 const onEnd = (e: any) => {
   dragging.value = false;
-  emit('taskChange', e);
-}
+  if (e.added) {
+    // A task was added to this column
+    emit('taskChange', {
+      task: e.added.element,
+      newColumnId: props.column.id,
+      newIndex: e.added.newIndex
+    });
+  } else if (e.removed) {
+    // A task was removed from this column
+    emit('taskChange', {
+      task: e.removed.element,
+      oldColumnId: props.column.id,
+      oldIndex: e.removed.oldIndex
+    });
+  }
+};
 
 const startAddingTask = () => {
   isAddingTask.value = true;
@@ -94,14 +108,13 @@ const openTaskModal = (task: Task) => {
 
     <draggable
         :list="column.tasks"
-        :disabled="!enabled"
+        :group="{ name: 'tasks', pull: true, put: true }"
         class="list-group"
         ghost-class="ghost"
         :move="checkMove"
         @start="onStart"
         @end="onEnd"
         item-key="id"
-        group="tasks"
     >
       <template #item="{ element }">
         <div
