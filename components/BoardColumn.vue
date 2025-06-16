@@ -5,7 +5,7 @@ import draggable from 'vuedraggable'
 interface Task {
   id: number | string;
   title: string;
-  description: string;
+  description?: string;
 }
 
 interface Column {
@@ -22,6 +22,8 @@ const emit = defineEmits(['taskChange', 'addTask', 'openTaskModal'])
 
 const enabled = ref(true)
 const dragging = ref(false)
+const isAddingTask = ref(false)
+const newTaskTitle = ref('')
 
 const draggingInfo = computed(() => {
   return dragging.value ? "under drag" : "";
@@ -40,12 +42,24 @@ const onEnd = (e: any) => {
   emit('taskChange', e);
 }
 
-const addNewTask = () => {
-  emit('addTask', {
-    columnId: props.column.id,
-    title: `New Task ${Date.now()}`,
-    description: 'Task description'
-  });
+const startAddingTask = () => {
+  isAddingTask.value = true;
+  newTaskTitle.value = '';
+}
+
+const cancelAddingTask = () => {
+  isAddingTask.value = false;
+}
+
+const submitNewTask = () => {
+  if (newTaskTitle.value.trim()) {
+    emit('addTask', {
+      columnId: props.column.id,
+      title: newTaskTitle.value.trim()
+    });
+    isAddingTask.value = false;
+    newTaskTitle.value = '';
+  }
 }
 
 const openTaskModal = (task: Task) => {
@@ -57,9 +71,23 @@ const openTaskModal = (task: Task) => {
   <div class="bg-gray-100 p-4 rounded-lg w-64">
     <h2 class="font-bold mb-2">{{ column.title }}</h2>
 
-    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2" @click="addNewTask">
-      Add Task
-    </button>
+    <div v-if="!isAddingTask">
+      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2" @click="startAddingTask">
+        Add Task
+      </button>
+    </div>
+
+    <div v-else class="mb-2">
+      <input v-model="newTaskTitle" placeholder="Task title" class="w-full p-2 mb-2 rounded" />
+      <div class="flex justify-between">
+        <button @click="submitNewTask" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">
+          Save
+        </button>
+        <button @click="cancelAddingTask" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">
+          Cancel
+        </button>
+      </div>
+    </div>
 
     <draggable
         :list="column.tasks"
@@ -78,7 +106,7 @@ const openTaskModal = (task: Task) => {
             @click="openTaskModal(element)"
         >
           <h3 class="font-semibold">{{ element.title }}</h3>
-          <p class="text-sm text-gray-600">{{ element.description }}</p>
+          <p v-if="element.description" class="text-sm text-gray-600">{{ element.description }}</p>
         </div>
       </template>
     </draggable>
