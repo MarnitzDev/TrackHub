@@ -84,34 +84,31 @@ const logColumnChange = (evt: any) => {
 }
 
 // Handle adding a new task
-const handleAddTask = async (newTaskData: { title: string, description: string, columnId: string }) => {
-  console.log('Handling add task:', newTaskData)
+const handleAddTask = async (newTaskData: Task) => {
+  console.log('Handling add task:', newTaskData);
   if (!currentProject.value) {
-    console.error('No current project selected')
-    return
+    console.error('No current project selected');
+    return;
   }
   try {
     const addedTask = await addTask({
       ...newTaskData,
       projectId: currentProject.value.id,
       status: 'todo',
-      position: tasks.value.length,
-      columnId: newTaskData.columnId
-    })
+      position: tasks.value.length
+    });
     if (addedTask) {
-      console.log('Task added successfully:', addedTask)
-      // Update the local state
-      tasks.value.push(addedTask)
-      // Find the correct column and add the task to it
-      const columnIndex = processedColumns.value.findIndex(col => col.id === newTaskData.columnId)
+      console.log('Task added successfully:', addedTask);
+      // Update the local state with only the newly added task
+      const columnIndex = processedColumns.value.findIndex(col => col.id === newTaskData.columnId);
       if (columnIndex !== -1) {
-        processedColumns.value[columnIndex].tasks.push(addedTask)
+        processedColumns.value[columnIndex].tasks.push(addedTask);
       }
     } else {
-      console.error('Failed to add task: No task returned')
+      console.error('Failed to add task: No task returned');
     }
   } catch (error) {
-    console.error('Error in handleAddTask:', error)
+    console.error('Error in handleAddTask:', error);
   }
 }
 

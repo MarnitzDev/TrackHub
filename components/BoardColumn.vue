@@ -53,12 +53,15 @@ const cancelAddingTask = () => {
 
 const submitNewTask = () => {
   if (newTaskTitle.value.trim()) {
-    emit('addTask', {
+    const newTask = {
+      id: Date.now(),
       columnId: props.column.id,
       title: newTaskTitle.value.trim()
-    });
+    };
+    emit('addTask', newTask);
     isAddingTask.value = false;
     newTaskTitle.value = '';
+    return newTask;
   }
 }
 
