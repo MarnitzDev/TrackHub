@@ -6,7 +6,7 @@ import { useTasks } from '~/composables/useTasks'
 import { useColumns } from '~/composables/useColumns'
 import { useProjects } from '~/composables/useProjects'
 import TaskModal from '~/components/TaskModal.vue'
-import ColumnComponent from '~/components/ColumnComponent.vue'
+import BoardColumn from '~/components/BoardColumn.vue'
 
 // Use composables
 const { isUserGuest } = useAuth()
@@ -207,12 +207,15 @@ onMounted(async () => {
 // Function to fetch both columns and tasks
 const fetchProjectData = async () => {
   if (currentProject.value) {
-    await fetchTasks(currentProject.value.id)
+    await fetchColumns(currentProject.value.id)
+    // Fetch tasks for all columns
+    for (const column of rawColumns.value) {
+      await fetchTasks(currentProject.value.id, column.id)
+    }
   } else {
     console.error('No current project selected')
   }
 }
-
 
 // Watch for changes in currentProject
 watchEffect(async () => {
@@ -262,7 +265,7 @@ watchEffect(async () => {
               @change="logColumnChange"
           >
             <template #item="{ element: column }">
-              <ColumnComponent
+              <BoardColumn
                   :column="column"
                   @task-change="log"
                   @add-task="handleAddTask"

@@ -1,3 +1,4 @@
+
 import { ref } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useUserStore } from '~/stores/userStore'
@@ -22,18 +23,43 @@ export const useTasks = () => {
     const loading = ref(false)
     const error = ref<string | null>(null)
 
-    const fetchTasks = async (projectId: string) => {
-        if (!user.value) return
+    const fetchTasks = async (projectId: string, columnId?: string) => {
+        if (!user.value) {
+            console.error('No user logged in')
+            return
+        }
+
+        if (!projectId) {
+            console.error('Project ID is required')
+            error.value = 'Project ID is required'
+            return
+        }
+
         loading.value = true
         error.value = null
+
         try {
-            const response = await fetch(`/api/tasks?projectId=${projectId}`)
-            if (!response.ok) throw new Error('Failed to fetch tasks')
-            tasks.value = await response.json()
+            let url = `/api/tasks?userId=${user.value.id}&projectId=${projectId}`
+            if (columnId) {
+                url += `&columnId=${columnId}`
+            }
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            const fetchedTasks = await response.json()
+            tasks.value = fetchedTasks
             console.log('Fetched tasks:', tasks.value)
-        } catch (e) {
-            console.error('Error fetching tasks:', e)
-            error.value = 'Failed to load tasks'
+        } catch (err) {
+            console.error('Error fetching tasks:', err)
+            error.value = 'Failed to fetch tasks'
         } finally {
             loading.value = false
         }

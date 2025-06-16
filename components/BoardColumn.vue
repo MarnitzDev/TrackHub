@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { VueDraggableNext } from 'vue.draggable.next'
-import { useBoard } from '~/composables/useBoard'
+import draggable from 'vuedraggable'
 
-const { columns, onCardDrop, addTask } = useBoard()
+const props = defineProps<{
+  column: {
+    id: number | string;
+    title: string;
+    tasks: any[];
+  }
+}>()
+
+const emit = defineEmits(['taskChange', 'addTask'])
 
 const enabled = ref(true)
 const dragging = ref(false)
@@ -22,62 +29,48 @@ const onStart = () => {
 
 const onEnd = (e: any) => {
   dragging.value = false;
-  const updatedColumns = [...columns.value];
-  const sourceColumnIndex = updatedColumns.findIndex(col => col.id === e.from.id);
-  const targetColumnIndex = updatedColumns.findIndex(col => col.id === e.to.id);
-
-  if (sourceColumnIndex !== -1 && targetColumnIndex !== -1) {
-    const [movedTask] = updatedColumns[sourceColumnIndex].tasks.splice(e.oldIndex, 1);
-    updatedColumns[targetColumnIndex].tasks.splice(e.newIndex, 0, movedTask);
-    updateColumnPositions(updatedColumns);
-  }
+  emit('taskChange', e);
 }
 
-
-const addNewTask = (columnId: number) => {
-  addTask(columnId, `New Task ${Date.now()}`, 'Task description');
+const addNewTask = () => {
+  emit('addTask', {
+    columnId: props.column.id,
+    title: `New Task ${Date.now()}`,
+    description: 'Task description'
+  });
 }
 </script>
 
 <template>
-  <div class="board">
-    <h1 class="text-2xl font-bold mb-4">Project Board</h1>
-    <div class="flex space-x-4">
-      <div v-for="column in columns" :key="column.id" class="bg-gray-100 p-4 rounded-lg w-64">
-        <h2 class="font-bold mb-2">{{ column.title }}</h2>
+  <div class="bg-gray-100 p-4 rounded-lg w-64">
+    <h2 class="font-bold mb-2">{{ column.title }}</h2>
 
-        <button class="btn btn-secondary mb-2" @click="addNewTask(column.id)">Add Task</button>
-        <VueDraggableNext
-            :list="column.tasks"
-            :disabled="!enabled"
-            class="list-group"
-            ghost-class="ghost"
-            :move="checkMove"
-            @start="onStart"
-            @end="onEnd"
-            item-key="id"
-            group="tasks"
-        >
-          <template #item="{ element }">
-            <div class="list-group-item bg-white p-2 mb-2 rounded shadow">
-              <h3 class="font-semibold">{{ element.title }}</h3>
-              <p class="text-sm text-gray-600">{{ element.description }}</p>
-            </div>
-          </template>
-        </VueDraggableNext>
-        <div class="mt-2">
-          <small>{{ draggingInfo }}</small>
+    <button class="btn btn-secondary mb-2" @click="addNewTask">Add Task</button>
+    <draggable
+        :list="column.tasks"
+        :disabled="!enabled"
+        class="list-group"
+        ghost-class="ghost"
+        :move="checkMove"
+        @start="onStart"
+        @end="onEnd"
+        item-key="id"
+        group="tasks"
+    >
+      <template #item="{ element }">
+        <div class="list-group-item bg-white p-2 mb-2 rounded shadow">
+          <h3 class="font-semibold">{{ element.title }}</h3>
+          <p class="text-sm text-gray-600">{{ element.description }}</p>
         </div>
-      </div>
+      </template>
+    </draggable>
+    <div class="mt-2">
+      <small>{{ draggingInfo }}</small>
     </div>
   </div>
 </template>
 
 <style scoped>
-.board {
-  padding: 20px;
-}
-
 .ghost {
   opacity: 0.5;
   background: #c8ebfb !important;

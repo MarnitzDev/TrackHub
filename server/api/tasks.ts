@@ -3,13 +3,14 @@ import prisma from '../db'
 
 export default defineEventHandler(async (event) => {
     const method = event.node.req.method
+    const query = getQuery(event)
 
     try {
         switch (method) {
             case 'GET':
                 // Fetch tasks
-                const { projectId } = getQuery(event)
-                console.log('Received GET request with query:', getQuery(event))
+                const { projectId, columnId } = query
+                console.log('Received GET request with query:', query)
                 if (!projectId) {
                     console.error('Project ID is missing in the request')
                     throw createError({
@@ -19,8 +20,12 @@ export default defineEventHandler(async (event) => {
                 }
                 console.log('Fetching tasks for project:', projectId)
                 try {
+                    const whereClause: any = { projectId: projectId as string }
+                    if (columnId) {
+                        whereClause.columnId = columnId as string
+                    }
                     const tasks = await prisma.task.findMany({
-                        where: { projectId: projectId as string },
+                        where: whereClause,
                         orderBy: { position: 'asc' }
                     })
                     console.log('Fetched tasks:', tasks)
