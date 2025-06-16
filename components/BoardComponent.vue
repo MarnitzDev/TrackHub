@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watchEffect, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import draggable from 'vuedraggable'
 import { useAuth } from '~/composables/useAuth'
 import { useTasks } from '~/composables/useTasks'
@@ -12,14 +12,9 @@ import BoardColumn from '~/components/BoardColumn.vue'
 const { isUserGuest } = useAuth()
 const { projects, loading: projectsLoading, error: projectsError, fetchProjects, createProject, setCurrentProject } = useProjects()
 const { columns: rawColumns, loading: columnsLoading, error: columnsError, fetchColumns, addColumn, updateColumnPositions } = useColumns()
-const { tasks, fetchTasks, addTask, updateTask, deleteTask } = useTasks()
+const { tasks, fetchTasks, addTask, updateTask, deleteTask, updateTaskPositions } = useTasks()
 
-// Use ref for currentProject instead of getting it from useProjects
 const currentProject = ref(null)
-
-const props = defineProps<{
-  currentProject?: { id: string; title: string }
-}>()
 
 // Define interfaces for Task and Column
 interface Task {
@@ -27,6 +22,7 @@ interface Task {
   title: string
   description: string
   status: string
+  columnId: number
 }
 
 interface Column {
@@ -37,58 +33,58 @@ interface Column {
 }
 
 // Computed property to combine columns and tasks
-const processedColumns = computed<Column[]>(() => {
-  console.log('Raw columns:', rawColumns.value)
-  console.log('Tasks:', tasks.value)
-
+const processedColumns = computed(() => {
   if (!rawColumns.value || !Array.isArray(rawColumns.value)) {
-    console.log('Raw columns is not an array or is undefined')
     return []
   }
 
-  const result = rawColumns.value.map(column => ({
+  return rawColumns.value.map(column => ({
     ...column,
     tasks: tasks.value.filter(task => task.columnId === column.id)
   }))
-
-  console.log('Processed columns:', result)
-  return result
 })
 
-// Use watchEffect for any side effects when columns or tasks change
-watchEffect(() => {
-  console.log('Columns updated:', processedColumns.value)
-})
+// Watch for changes in processedColumns
+watch(processedColumns, (newColumns) => {
+  console.log('Processed Columns changed:', newColumns)
+}, { deep: true })
 
-// Log changes in task and column order
-const log = async (evt: any) => {
-  console.log('Task change:', evt)
-  if (evt.added) {
-    const task = evt.added.element
-    const newStatus = processedColumns.value.find(col => col.tasks.includes(task))?.title.toLowerCase().replace(' ', '_')
-    if (newStatus) {
-      await updateTask(task.id, { status: newStatus })
-    }
-  }
-}
-
-const logColumnChange = (evt: any) => {
-  console.log('Column change:', evt)
+// Handle column reordering
+const handleColumnReorder = async (evt: any) => {
   if (evt.moved) {
     const updatedColumns = processedColumns.value.map((column, index) => ({
       ...column,
       position: index
     }))
-    updateColumnPositions(updatedColumns)
+    await updateColumnPositions(updatedColumns)
+  }
+}
+
+// Handle task changes (moving between columns or reordering within a column)
+const handleTaskChange = async ({ added, removed, moved }) => {
+  if (added) {
+    // Task moved to a new column
+    const task = added.element
+    const newColumnId = added.newIndex
+    await updateTask(task.id, { columnId: newColumnId })
+  } else if (removed) {
+    // Task removed from a column (this might not be needed if you're always adding when removing)
+    console.log('Task removed:', removed)
+  } else if (moved) {
+    // Task reordered within the same column
+    const columnId = moved.from
+    const column = processedColumns.value.find(col => col.id === columnId)
+    if (column) {
+      await updateTaskPositions(columnId, column.tasks.map(t => t.id))
+    }
   }
 }
 
 // Handle adding a new task
 const handleAddTask = async (newTaskData: Task) => {
-  console.log('Handling add task:', newTaskData);
   if (!currentProject.value) {
-    console.error('No current project selected');
-    return;
+    console.error('No current project selected')
+    return
   }
   try {
     const addedTask = await addTask({
@@ -96,31 +92,21 @@ const handleAddTask = async (newTaskData: Task) => {
       projectId: currentProject.value.id,
       status: 'todo',
       position: tasks.value.length
-    });
+    })
     if (addedTask) {
-      console.log('Task added successfully:', addedTask);
-      // Update the local state with only the newly added task
-      const columnIndex = processedColumns.value.findIndex(col => col.id === newTaskData.columnId);
-      if (columnIndex !== -1) {
-        processedColumns.value[columnIndex].tasks.push(addedTask);
-      }
+      console.log('Task added successfully:', addedTask)
+      await fetchTasks(currentProject.value.id)
     } else {
-      console.error('Failed to add task: No task returned');
+      console.error('Failed to add task: No task returned')
     }
   } catch (error) {
-    console.error('Error in handleAddTask:', error);
+    console.error('Error in handleAddTask:', error)
   }
 }
 
 // State for new column creation
 const isAddingColumn = ref(false)
 const newColumnTitle = ref('')
-
-// Function to start adding a new column
-const startAddingColumn = () => {
-  isAddingColumn.value = true
-  newColumnTitle.value = ''
-}
 
 // Function to handle adding a new column
 const handleAddColumn = async () => {
@@ -129,20 +115,11 @@ const handleAddColumn = async () => {
       await addColumn(currentProject.value.id, newColumnTitle.value.trim())
       isAddingColumn.value = false
       newColumnTitle.value = ''
-      // Refresh the columns for the current project
-      if (currentProject.value) {
-        await fetchColumns(currentProject.value.id)
-      }
+      await fetchColumns(currentProject.value.id)
     } catch (e) {
       console.error('Error adding column:', e)
     }
   }
-}
-
-// Function to cancel adding a new column
-const cancelAddingColumn = () => {
-  isAddingColumn.value = false
-  newColumnTitle.value = ''
 }
 
 // Modal state and functions
@@ -181,10 +158,6 @@ const handleTaskDelete = async (taskId: number) => {
   }
 }
 
-// New state for project creation
-const isCreatingProject = ref(false)
-const newProjectTitle = ref('')
-
 // Function to handle project creation
 const handleCreateProject = async () => {
   if (newProjectTitle.value.trim()) {
@@ -193,75 +166,41 @@ const handleCreateProject = async () => {
       setCurrentProject(newProject.id)
       isCreatingProject.value = false
       newProjectTitle.value = ''
+      await fetchProjectData()
     }
   }
 }
 
 // Fetch projects, tasks, and columns on component mount
 onMounted(async () => {
-  await fetchProjects();
+  await fetchProjects()
   if (projects.value.length > 0) {
-    currentProject.value = projects.value[0];
-    await fetchProjectData();
+    currentProject.value = projects.value[0]
+    await fetchProjectData()
   }
-});
+})
 
 // Function to fetch both columns and tasks
 const fetchProjectData = async () => {
   if (currentProject.value) {
-    await fetchColumns(currentProject.value.id);
-    await fetchTasks(currentProject.value.id);
-
-    // After fetching tasks, distribute them to their respective columns
-    processedColumns.value = rawColumns.value.map(column => ({
-      ...column,
-      tasks: tasks.value.filter(task => task.columnId === column.id)
-    }));
+    await Promise.all([
+      fetchColumns(currentProject.value.id),
+      fetchTasks(currentProject.value.id)
+    ])
   } else {
-    console.error('No current project selected');
+    console.error('No current project selected')
   }
 }
 
 const handleProjectChange = async (event: Event) => {
-  const select = event.target as HTMLSelectElement;
-  const selectedProjectId = select.value;
-  const selectedProject = projects.value.find(p => p.id === selectedProjectId);
+  const select = event.target as HTMLSelectElement
+  const selectedProjectId = select.value
+  const selectedProject = projects.value.find(p => p.id === selectedProjectId)
   if (selectedProject) {
-    currentProject.value = selectedProject;
-    await fetchProjectData();
+    currentProject.value = selectedProject
+    await fetchProjectData()
   }
 }
-
-const handleTaskChange = async ({ task, newColumnId, oldColumnId, newIndex, oldIndex }) => {
-  if (newColumnId && oldColumnId) {
-    // Task moved between columns
-    const oldColumn = columns.value.find(col => col.id === oldColumnId);
-    const newColumn = columns.value.find(col => col.id === newColumnId);
-
-    if (oldColumn && newColumn) {
-      // Remove task from old column
-      oldColumn.tasks = oldColumn.tasks.filter(t => t.id !== task.id);
-
-      // Add task to new column
-      newColumn.tasks.splice(newIndex, 0, task);
-
-      // Update task in the backend
-      await updateTask(task.id, { columnId: newColumnId });
-    }
-  } else if (newIndex !== undefined) {
-    // Task reordered within the same column
-    const column = columns.value.find(col => col.id === task.columnId);
-    if (column) {
-      // Remove task from its old position and insert it at the new position
-      column.tasks = column.tasks.filter(t => t.id !== task.id);
-      column.tasks.splice(newIndex, 0, task);
-
-      // Update task order in the backend
-      // You might want to update all tasks' positions in this column
-      await updateTaskPositions(column.id, column.tasks.map(t => t.id));
-    }
-  }
-};
 </script>
 
 <template>
@@ -296,18 +235,17 @@ const handleTaskChange = async ({ task, newColumnId, oldColumnId, newIndex, oldI
       <div v-if="currentProject" class="mt-4">
         <h2 class="text-2xl font-bold mb-4">{{ currentProject.title }}</h2>
 
-        <div class="flex space-x-4">
+        <div class="flex space-x-4 overflow-x-auto">
           <!-- Draggable container for columns -->
           <draggable
               v-model="processedColumns"
               group="columns"
               item-key="id"
               class="flex space-x-4"
-              @change="logColumnChange"
+              @change="handleColumnReorder"
           >
             <template #item="{ element: column }">
               <BoardColumn
-                  v-for="column in processedColumns"
                   :key="column.id"
                   :column="column"
                   @task-change="handleTaskChange"
@@ -331,7 +269,7 @@ const handleTaskChange = async ({ task, newColumnId, oldColumnId, newIndex, oldI
                   icon="i-lucide-x"
                   color="neutral"
                   variant="soft"
-                  @click="cancelAddingColumn"
+                  @click="isAddingColumn = false"
               />
             </div>
           </div>
@@ -342,7 +280,7 @@ const handleTaskChange = async ({ task, newColumnId, oldColumnId, newIndex, oldI
               color="neutral"
               variant="soft"
               class="h-12 px-4 self-start flex-shrink-0"
-              @click="startAddingColumn"
+              @click="isAddingColumn = true"
           >
             + Add Column
           </UButton>
@@ -358,29 +296,20 @@ const handleTaskChange = async ({ task, newColumnId, oldColumnId, newIndex, oldI
         @save="handleTaskSave"
         @delete="handleTaskDelete"
     />
-
-    <!-- Debug section -->
-    <div v-if="currentProject" class="mt-8 p-4 bg-gray-100 rounded">
-      <h3 class="text-lg font-bold mb-2">Debug Info:</h3>
-      <p>Current Project: {{ currentProject }}</p>
-      <p>Raw Columns: {{ rawColumns }}</p>
-      <p>Processed Columns: {{ processedColumns }}</p>
-    </div>
-
-    <div v-for="task in tasks" :key="task.id">
-      {{ task.title }}
-    </div>
-    <p>Total tasks: {{ tasks.length }}</p>
-
   </div>
 </template>
 
 <style scoped>
+.board {
+  overflow-x: auto;
+}
+
 .sortable-ghost {
-  opacity: 0.8;
+  opacity: 0.5;
   background: #c8ebfb;
 }
+
 .sortable-drag {
-  opacity: 0.5;
+  opacity: 0.8;
 }
 </style>

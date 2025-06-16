@@ -15,12 +15,11 @@ interface Column {
 }
 
 const props = defineProps<{
-  column: Column & { tasks: Task[] }
+  column: Column
 }>()
 
-const emit = defineEmits(['taskChange', 'addTask', 'openTaskModal'])
+const emit = defineEmits(['task-change', 'add-task', 'open-task-modal'])
 
-const enabled = ref(true)
 const dragging = ref(false)
 const isAddingTask = ref(false)
 const newTaskTitle = ref('')
@@ -29,32 +28,17 @@ const draggingInfo = computed(() => {
   return dragging.value ? "under drag" : "";
 })
 
-const checkMove = (e: any) => {
-  console.log("Future index: " + e.draggedContext.futureIndex);
+const emitTaskChange = (evt: any) => {
+  emit('task-change', { columnId: props.column.id, ...evt })
 }
 
 const onStart = () => {
   dragging.value = true;
 }
 
-const onEnd = (e: any) => {
+const onEnd = () => {
   dragging.value = false;
-  if (e.added) {
-    // A task was added to this column
-    emit('taskChange', {
-      task: e.added.element,
-      newColumnId: props.column.id,
-      newIndex: e.added.newIndex
-    });
-  } else if (e.removed) {
-    // A task was removed from this column
-    emit('taskChange', {
-      task: e.removed.element,
-      oldColumnId: props.column.id,
-      oldIndex: e.removed.oldIndex
-    });
-  }
-};
+}
 
 const startAddingTask = () => {
   isAddingTask.value = true;
@@ -67,20 +51,18 @@ const cancelAddingTask = () => {
 
 const submitNewTask = () => {
   if (newTaskTitle.value.trim()) {
-    const newTask = {
+    const newTask: Task = {
       id: Date.now(),
-      columnId: props.column.id,
       title: newTaskTitle.value.trim()
     };
-    emit('addTask', newTask);
+    emit('add-task', { task: newTask, columnId: props.column.id });
     isAddingTask.value = false;
     newTaskTitle.value = '';
-    return newTask;
   }
 }
 
 const openTaskModal = (task: Task) => {
-  emit('openTaskModal', task, props.column.id);
+  emit('open-task-modal', task, props.column.id);
 }
 </script>
 
@@ -108,21 +90,20 @@ const openTaskModal = (task: Task) => {
 
     <draggable
         :list="column.tasks"
-        :group="{ name: 'tasks', pull: true, put: true }"
-        class="list-group"
-        ghost-class="ghost"
-        :move="checkMove"
+        group="tasks"
+        item-key="id"
+        @change="emitTaskChange"
         @start="onStart"
         @end="onEnd"
-        item-key="id"
+        ghost-class="ghost"
+        drag-class="drag"
     >
-      <template #item="{ element }">
+      <template #item="{ element: task }">
         <div
-            class="list-group-item bg-white p-2 mb-2 rounded shadow cursor-pointer"
-            @click="openTaskModal(element)"
+            class="task bg-white p-2 mb-2 rounded shadow cursor-move"
+            @click.stop="openTaskModal(task)"
         >
-          <h3 class="font-semibold">{{ element.title }}</h3>
-          <p v-if="element.description" class="text-sm text-gray-600">{{ element.description }}</p>
+          {{ task.title }}
         </div>
       </template>
     </draggable>
@@ -143,15 +124,11 @@ const openTaskModal = (task: Task) => {
   background: #c8ebfb !important;
 }
 
-.list-group-item {
-  cursor: move;
+.drag {
+  opacity: 0.8;
 }
 
-.list-group-item:hover {
+.task:hover {
   box-shadow: 0 0 11px rgba(33,33,33,.2);
-}
-
-.list-group {
-  min-height: 20px;
 }
 </style>

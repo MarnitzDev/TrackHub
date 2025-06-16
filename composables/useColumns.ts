@@ -35,25 +35,30 @@ export const useColumns = () => {
             if (!response.ok) throw new Error('Failed to fetch columns')
             const fetchedColumns = await response.json()
 
-            // Directly assign fetched columns without fetching tasks
-            columns.value = fetchedColumns.map((column: Column) => ({
+            // Use a Map to ensure unique columns by ID
+            const uniqueColumns = Array.from(new Map(fetchedColumns.map(column => [column.id, column])).values())
+            columns.value = uniqueColumns.map((column: Column) => ({
                 ...column,
-                tasks: [] // Initialize tasks as an empty array
+                tasks: []
             }))
 
-            console.log('Fetched columns:', columns.value) // Add this log
+            console.log('Fetched columns:', columns.value)
 
-            // Optionally, fetch tasks for each column asynchronously
-            fetchedColumns.forEach(async (column: Column) => {
-                const tasksResponse = await fetch(`/api/tasks?columnId=${column.id}`)
-                if (tasksResponse.ok) {
-                    const tasks = await tasksResponse.json()
-                    const columnIndex = columns.value.findIndex(c => c.id === column.id)
-                    if (columnIndex !== -1) {
-                        columns.value[columnIndex].tasks = tasks
+            // Fetch tasks for all columns in a single request
+            const tasksResponse = await fetch(`/api/tasks?projectId=${projectId}`)
+            if (tasksResponse.ok) {
+                const allTasks = await tasksResponse.json()
+
+                // Distribute tasks to their respective columns
+                allTasks.forEach((task: Task) => {
+                    const column = columns.value.find(c => c.id === task.columnId)
+                    if (column) {
+                        column.tasks.push(task)
                     }
-                }
-            })
+                })
+            }
+
+            console.log('Columns with tasks:', columns.value)
         } catch (e) {
             console.error('Error fetching columns:', e)
             error.value = 'Failed to fetch columns'
