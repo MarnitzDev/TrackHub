@@ -1,6 +1,10 @@
-
 import { ref } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+
+interface Project {
+    id: string;
+    title: string;
+}
 
 export const useProjects = () => {
     const { user } = useAuth()
@@ -48,8 +52,8 @@ export const useProjects = () => {
         }
     }
 
-    const setCurrentProject = (projectId: string) => {
-        currentProject.value = projects.value.find(p => p.id === projectId) || null
+    const setCurrentProject = (project: Project) => {
+        currentProject.value = project;
     }
 
     return {

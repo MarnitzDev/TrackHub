@@ -207,22 +207,27 @@ onMounted(async () => {
 // Function to fetch both columns and tasks
 const fetchProjectData = async () => {
   if (currentProject.value) {
-    await fetchColumns(currentProject.value.id)
-    // Fetch tasks for all columns
-    for (const column of rawColumns.value) {
-      await fetchTasks(currentProject.value.id, column.id)
-    }
+    await fetchColumns(currentProject.value.id);
+    await fetchTasks(currentProject.value.id);
   } else {
-    console.error('No current project selected')
+    console.error('No current project selected');
   }
 }
 
-// Watch for changes in currentProject
-watchEffect(async () => {
-  if (currentProject.value) {
-    await fetchProjectData()
-  }
-})
+const handleProjectChange = async (event: Event) => {
+  const select = event.target as HTMLSelectElement;
+  const selectedIndex = select.selectedIndex;
+  const selectedProject = projects.value[selectedIndex];
+  currentProject.value = selectedProject;
+  await fetchProjectData();
+}
+
+// // Watch for changes in currentProject
+// watchEffect(async () => {
+//   if (currentProject.value) {
+//     await fetchProjectData()
+//   }
+// })
 </script>
 
 <template>
@@ -237,8 +242,8 @@ watchEffect(async () => {
       <!-- Project selection -->
       <div v-if="projects.length > 0" class="mb-4">
         <label for="project-select" class="mr-2">Select Project:</label>
-        <select id="project-select" v-model="currentProject" @change="setCurrentProject($event.target.value)">
-          <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.title }}</option>
+        <select id="project-select" v-model="currentProject" @change="handleProjectChange($event)">
+          <option v-for="project in projects" :key="project.id" :value="project">{{ project.title }}</option>
         </select>
       </div>
 
