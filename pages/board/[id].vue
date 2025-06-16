@@ -5,19 +5,19 @@ import { Board, List } from '@prisma/client'
 const route = useRoute()
 const boardId = route.params.id as string
 
-const { data: board } = await useFetch<Board & { lists: List[] }>(`/api/boards/${boardId}`)
+const { data: board, refresh } = await useFetch<Board & { lists: List[] }>(`/api/boards/${boardId}`)
 
 const showCreateListModal = ref(false)
 const newListTitle = ref('')
 
 const createList = async () => {
-  await $fetch(`/api/boards/${boardId}/lists`, {
+  await $fetch(`/api/lists`, {
     method: 'POST',
-    body: { title: newListTitle.value }
+    body: { title: newListTitle.value, boardId: route.params.id }
   })
+  await refresh()
   showCreateListModal.value = false
   newListTitle.value = ''
-  refresh()
 }
 </script>
 
