@@ -8,7 +8,13 @@ export default defineEventHandler(async (event) => {
     try {
         const board = await prisma.board.findUnique({
             where: { id },
-            include: { lists: true }
+            include: {
+                lists: {
+                    include: {
+                        cards: true
+                    }
+                }
+            }
         })
 
         if (!board) {
