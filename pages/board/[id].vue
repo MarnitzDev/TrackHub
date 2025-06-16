@@ -10,6 +10,11 @@ const { data: board, refresh } = await useFetch<Board & { lists: List[] }>(`/api
 const showCreateListModal = ref(false)
 const newListTitle = ref('')
 
+const showCreateCardModal = ref(false)
+const newCardTitle = ref('')
+const newCardDescription = ref('')
+const activeListId = ref<string | null>(null)
+
 const createList = async () => {
   await $fetch(`/api/lists`, {
     method: 'POST',
@@ -18,6 +23,31 @@ const createList = async () => {
   await refresh()
   showCreateListModal.value = false
   newListTitle.value = ''
+}
+
+const openCreateCardModal = (listId: string) => {
+  activeListId.value = listId
+  showCreateCardModal.value = true
+}
+
+const createCard = async () => {
+  console.log('Creating card:', newCardTitle.value, newCardDescription.value, activeListId.value)
+
+  if (!activeListId.value) return
+
+  await $fetch(`/api/cards`, {
+    method: 'POST',
+    body: {
+      title: newCardTitle.value,
+      description: newCardDescription.value,
+      listId: activeListId.value
+    }
+  })
+  await refresh()
+  showCreateCardModal.value = false
+  newCardTitle.value = ''
+  newCardDescription.value = ''
+  activeListId.value = null
 }
 </script>
 
@@ -28,12 +58,16 @@ const createList = async () => {
     <div class="flex space-x-4 overflow-x-auto">
       <div v-for="list in board.lists" :key="list.id" class="bg-gray-100 p-4 rounded min-w-[250px]">
         <h2 class="text-xl font-semibold mb-2">{{ list.title }}</h2>
-        <!-- Add cards here -->
+        <div class="space-y-2">
+          <div v-for="card in list.cards" :key="card.id" class="bg-white p-2 rounded shadow">
+            <h3 class="font-medium">{{ card.title }}</h3>
+            <p class="text-sm text-gray-600">{{ card.description }}</p>
+          </div>
+          <button @click="openCreateCardModal(list.id)" class="w-full text-left p-2 text-gray-600 hover:bg-gray-200 rounded">
+            + Add a card
+          </button>
+        </div>
       </div>
-
-      <button @click="showCreateListModal = true" class="bg-gray-200 p-4 rounded min-w-[250px] text-left">
-        + Add another list
-      </button>
     </div>
 
     <!-- Create List Modal -->
@@ -44,6 +78,21 @@ const createList = async () => {
           <input v-model="newListTitle" type="text" placeholder="List Title" class="w-full p-2 border rounded mb-4">
           <div class="flex justify-end">
             <button type="button" @click="showCreateListModal = false" class="mr-2 px-4 py-2 text-gray-600">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Create Card Modal -->
+    <div v-if="showCreateCardModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white p-6 rounded-lg">
+        <h2 class="text-2xl font-bold mb-4">Create New Card</h2>
+        <form @submit.prevent="createCard">
+          <input v-model="newCardTitle" type="text" placeholder="Card Title" class="w-full p-2 border rounded mb-4">
+          <textarea v-model="newCardDescription" placeholder="Card Description" class="w-full p-2 border rounded mb-4"></textarea>
+          <div class="flex justify-end">
+            <button type="button" @click="showCreateCardModal = false" class="mr-2 px-4 py-2 text-gray-600">Cancel</button>
             <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">Create</button>
           </div>
         </form>
