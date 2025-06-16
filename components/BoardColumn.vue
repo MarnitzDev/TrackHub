@@ -14,11 +14,8 @@ interface Column {
   tasks: Task[];
 }
 
-const props = defineProps<{
-  column: Column
-}>()
-
-const emit = defineEmits(['task-change', 'add-task', 'open-task-modal'])
+const emit = defineEmits(['add-task'])
+const props = defineProps(['column'])
 
 const dragging = ref(false)
 const isAddingTask = ref(false)
@@ -51,13 +48,8 @@ const cancelAddingTask = () => {
 
 const submitNewTask = () => {
   if (newTaskTitle.value.trim()) {
-    const newTask: Task = {
-      id: Date.now(),
-      title: newTaskTitle.value.trim()
-    };
-    emit('add-task', { task: newTask, columnId: props.column.id });
-    isAddingTask.value = false;
-    newTaskTitle.value = '';
+    emit('add-task', { title: newTaskTitle.value.trim() }, props.column.id)
+    newTaskTitle.value = ''
   }
 }
 
@@ -71,9 +63,10 @@ const openTaskModal = (task: Task) => {
     <h2 class="font-bold mb-2">{{ column.title }}</h2>
 
     <div v-if="!isAddingTask">
-      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2" @click="startAddingTask">
-        Add Task
-      </button>
+      <form @submit.prevent="submitNewTask">
+        <input v-model="newTaskTitle" placeholder="New task title" />
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2">Add Task</button>
+      </form>
     </div>
 
     <div v-else class="mb-2">

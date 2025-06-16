@@ -65,31 +65,61 @@ const handleTaskChange = async ({ added, removed, moved }) => {
   if (added) {
     // Task moved to a new column
     const task = added.element
-    const newColumnId = added.newIndex
-    await updateTask(task.id, { columnId: newColumnId })
-  } else if (removed) {
-    // Task removed from a column (this might not be needed if you're always adding when removing)
-    console.log('Task removed:', removed)
+    const newColumnId = added.newList.id // Make sure this is the correct way to get the new column id
+    try {
+      if (!task.title || !currentProject.value?.id || !newColumnId) {
+        throw new Error('Missing required fields for task update')
+      }
+      await updateTask(task.id, {
+        title: task.title,
+        projectId: currentProject.value.id,
+        columnId: newColumnId
+      })
+      // Update local state
+      const updatedColumns = processedColumns.value.map(column => {
+        if (column.id === newColumnId) {
+          return { ...column, tasks: [...column.tasks, task] }
+        } else if (column.id === removed.element.columnId) {
+          return { ...column, tasks: column.tasks.filter(t => t.id !== task.id) }
+        }
+        return column
+      })
+      processedColumns.value = updatedColumns
+    } catch (error) {
+      console.error('Error updating task:', error)
+      // Revert the change in the UI
+      await fetchProjectData()
+    }
   } else if (moved) {
     // Task reordered within the same column
     const columnId = moved.from
     const column = processedColumns.value.find(col => col.id === columnId)
     if (column) {
-      await updateTaskPositions(columnId, column.tasks.map(t => t.id))
+      const newTaskOrder = column.tasks.map(t => t.id)
+      try {
+        await updateTaskPositions(columnId, newTaskOrder)
+        // The local state is already updated by vue-draggable, so we don't need to do anything here
+      } catch (error) {
+        console.error('Error updating task positions:', error)
+        // Revert the change in the UI
+        await fetchProjectData()
+      }
     }
   }
 }
 
 // Handle adding a new task
-const handleAddTask = async (newTaskData: Task) => {
+const handleAddTask = async (newTaskData: Partial<Task>, columnId: string) => {
   if (!currentProject.value) {
     console.error('No current project selected')
     return
   }
   try {
     const addedTask = await addTask({
-      ...newTaskData,
+      title: newTaskData.title,
+      description: newTaskData.description,
       projectId: currentProject.value.id,
+      columnId: columnId,
       status: 'todo',
       position: tasks.value.length
     })

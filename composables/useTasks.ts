@@ -69,45 +69,50 @@ export const useTasks = () => {
         loading.value = true
         error.value = null
         try {
+            if (!taskData.title || !taskData.projectId || !taskData.columnId) {
+                throw new Error('Task title, project ID, and column ID are required')
+            }
             const response = await fetch('/api/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...taskData, userId: user.value.id })
             })
-            if (!response.ok) throw new Error('Failed to add task')
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.message || 'Failed to add task')
+            }
             const newTask = await response.json()
             tasks.value.push(newTask)
             return newTask
         } catch (e) {
             console.error('Error adding task:', e)
-            error.value = 'Failed to add task'
+            error.value = e.message || 'Failed to add task'
             return null
         } finally {
             loading.value = false
         }
     }
 
-    const updateTask = async (taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>) => {
-        if (!user.value) return null
-        loading.value = true
-        error.value = null
+    const updateTask = async (taskId: number, updates: Partial<Task>) => {
         try {
+            if (!updates.title || !updates.projectId || !updates.columnId) {
+                throw new Error('Task title, project ID, and column ID are required')
+            }
             const response = await fetch(`/api/tasks/${taskId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...updates, userId: user.value.id })
-            })
-            if (!response.ok) throw new Error('Failed to update task')
-            const updatedTask = await response.json()
-            tasks.value = tasks.value.map(t => t.id === taskId ? updatedTask : t)
-            console.log('Updated task:', updatedTask)
-            return updatedTask
-        } catch (e) {
-            console.error('Error updating task:', e)
-            error.value = 'Failed to update task'
-            return null
-        } finally {
-            loading.value = false
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updates),
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error updating task:', error);
+            throw error;
         }
     }
 
