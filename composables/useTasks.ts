@@ -1,151 +1,114 @@
-
 import { ref } from 'vue'
-import { useAuth } from '~/composables/useAuth'
-import { useUserStore } from '~/stores/userStore'
-
-interface Task {
-    id: string
-    title: string
-    description: string
-    status: string
-    position: number
-    projectId: string
-    columnId: string
-    userId: string
-    createdAt: string
-    updatedAt: string
-}
 
 export const useTasks = () => {
-    const { user } = useAuth()
-    const userStore = useUserStore()
-    const tasks = ref<Task[]>([])
-    const loading = ref(false)
-    const error = ref<string | null>(null)
+    const tasks = ref([])
 
-    const fetchTasks = async (projectId: string, columnId?: string) => {
-        if (!user.value) {
-            console.error('No user logged in')
-            return
-        }
-
-        if (!projectId) {
-            console.error('Project ID is required to fetch tasks');
-            return;
-        }
-
-        loading.value = true
-        error.value = null
-
+    const fetchTasks = async (projectId) => {
         try {
-            let url = `/api/tasks?userId=${user.value.id}&projectId=${projectId}`
-            if (columnId) {
-                url += `&columnId=${columnId}`
-            }
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-
+            const response = await fetch(`/api/tasks?projectId=${projectId}`)
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`)
+                throw new Error('Failed to fetch tasks')
             }
-
-            const fetchedTasks = await response.json()
-            tasks.value = fetchedTasks
-            console.log('Fetched tasks:', tasks.value)
-        } catch (err) {
-            console.error('Error fetching tasks:', err)
-            error.value = 'Failed to fetch tasks'
-        } finally {
-            loading.value = false
+            tasks.value = await response.json()
+        } catch (error) {
+            console.error('Error fetching tasks:', error)
+            throw error
         }
     }
 
-    const addTask = async (taskData: Partial<Task>) => {
-        if (!user.value) return null
-        loading.value = true
-        error.value = null
+    const addTask = async (taskData) => {
         try {
-            if (!taskData.title || !taskData.projectId || !taskData.columnId) {
-                throw new Error('Task title, project ID, and column ID are required')
-            }
             const response = await fetch('/api/tasks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...taskData, userId: user.value.id })
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(taskData),
             })
             if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.message || 'Failed to add task')
+                throw new Error('Failed to add task')
             }
             const newTask = await response.json()
             tasks.value.push(newTask)
             return newTask
-        } catch (e) {
-            console.error('Error adding task:', e)
-            error.value = e.message || 'Failed to add task'
-            return null
-        } finally {
-            loading.value = false
+        } catch (error) {
+            console.error('Error adding task:', error)
+            throw error
         }
     }
 
-    const updateTask = async (taskId: number, updates: Partial<Task>) => {
+    const updateTask = async (taskId, updates) => {
         try {
-            if (!updates.title || !updates.projectId || !updates.columnId) {
-                throw new Error('Task title, project ID, and column ID are required')
-            }
-            const response = await fetch(`/api/tasks/${taskId}`, {
+            const response = await fetch(`/api/tasks`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(updates),
-            });
+                body: JSON.stringify({ id: taskId, ...updates }),
+            })
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('Failed to update task')
             }
-            const data = await response.json();
-            return data;
+            const updatedTask = await response.json()
+            const index = tasks.value.findIndex(t => t.id === taskId)
+            if (index !== -1) {
+                tasks.value[index] = updatedTask
+            }
+            return updatedTask
         } catch (error) {
-            console.error('Error updating task:', error);
-            throw error;
+            console.error('Error updating task:', error)
+            throw error
         }
     }
 
-    const deleteTask = async (taskId: string) => {
-        if (!user.value) return false
-        loading.value = true
-        error.value = null
+    const deleteTask = async (taskId) => {
         try {
-            const response = await fetch(`/api/tasks/${taskId}`, {
+            const response = await fetch(`/api/tasks?id=${taskId}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.value.id })
             })
-            if (!response.ok) throw new Error('Failed to delete task')
+            if (!response.ok) {
+                throw new Error('Failed to delete task')
+            }
             tasks.value = tasks.value.filter(t => t.id !== taskId)
-            console.log('Deleted task:', taskId)
             return true
-        } catch (e) {
-            console.error('Error deleting task:', e)
-            error.value = 'Failed to delete task'
-            return false
-        } finally {
-            loading.value = false
+        } catch (error) {
+            console.error('Error deleting task:', error)
+            throw error
+        }
+    }
+
+    const reorderTasks = async (columnId, newOrder) => {
+        try {
+            const response = await fetch('/api/tasks', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ columnId, taskOrder: newOrder }),
+            })
+            if (!response.ok) {
+                throw new Error('Failed to reorder tasks')
+            }
+            // Update local state
+            tasks.value = tasks.value.map(task => {
+                if (task.columnId === columnId) {
+                    const updatedTask = newOrder.find(t => t.id === task.id)
+                    return updatedTask ? { ...task, ...updatedTask } : task
+                }
+                return task
+            })
+        } catch (error) {
+            console.error('Error reordering tasks:', error)
+            throw error
         }
     }
 
     return {
         tasks,
-        loading,
-        error,
         fetchTasks,
         addTask,
         updateTask,
-        deleteTask
+        deleteTask,
+        reorderTasks
     }
 }

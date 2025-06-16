@@ -7,52 +7,31 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  name      String?
-  auth0Id   String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  projects  Project[]
-  tasks     Task[]
-}
-
-model Project {
+model Board {
   id          String   @id @default(uuid())
   title       String
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  tasks       Task[]
-  columns     Column[]
+  lists       List[]
 }
 
-model Column {
+model List {
   id        String   @id @default(uuid())
   title     String
-  position  Int
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id])
+  cards     Card[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id])
-  tasks     Task[]
 }
 
-model Task {
+model Card {
   id          String   @id @default(uuid())
   title       String
   description String?
-  status      String
-  position    Int
+  listId      String
+  list        List     @relation(fields: [listId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
-  columnId    String
-  column      Column   @relation(fields: [columnId], references: [id])
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
 }
