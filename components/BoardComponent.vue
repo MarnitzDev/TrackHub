@@ -48,9 +48,7 @@ const processedColumns = computed<Column[]>(() => {
 
   const result = rawColumns.value.map(column => ({
     ...column,
-    tasks: Array.isArray(tasks.value)
-        ? tasks.value.filter(task => task.status === column.title.toLowerCase().replace(' ', '_'))
-        : []
+    tasks: tasks.value.filter(task => task.columnId === column.id)
   }))
 
   console.log('Processed columns:', result)
@@ -87,7 +85,7 @@ const logColumnChange = (evt: any) => {
 
 // Handle adding a new task
 const handleAddTask = async (newTaskData: { title: string, description: string, columnId: string }) => {
-  console.log('Handling add task:', newTaskData) // Add this line for debugging
+  console.log('Handling add task:', newTaskData)
   if (!currentProject.value) {
     console.error('No current project selected')
     return
@@ -98,10 +96,17 @@ const handleAddTask = async (newTaskData: { title: string, description: string, 
       projectId: currentProject.value.id,
       status: 'todo',
       position: tasks.value.length,
-      columnId: newTaskData.columnId // Make sure this is included
+      columnId: newTaskData.columnId
     })
     if (addedTask) {
       console.log('Task added successfully:', addedTask)
+      // Update the local state
+      tasks.value.push(addedTask)
+      // Find the correct column and add the task to it
+      const columnIndex = processedColumns.value.findIndex(col => col.id === newTaskData.columnId)
+      if (columnIndex !== -1) {
+        processedColumns.value[columnIndex].tasks.push(addedTask)
+      }
     } else {
       console.error('Failed to add task: No task returned')
     }

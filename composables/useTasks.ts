@@ -65,7 +65,7 @@ export const useTasks = () => {
         }
     }
 
-    const addTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const addTask = async (taskData: Partial<Task>) => {
         if (!user.value) return null
         loading.value = true
         error.value = null
@@ -73,15 +73,11 @@ export const useTasks = () => {
             const response = await fetch('/api/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...taskData,
-                    userId: user.value.id
-                })
+                body: JSON.stringify({ ...taskData, userId: user.value.id })
             })
             if (!response.ok) throw new Error('Failed to add task')
             const newTask = await response.json()
             tasks.value.push(newTask)
-            console.log('Added task:', newTask)
             return newTask
         } catch (e) {
             console.error('Error adding task:', e)

@@ -2,15 +2,23 @@
 import { ref, computed } from 'vue'
 import draggable from 'vuedraggable'
 
+interface Task {
+  id: number | string;
+  title: string;
+  description: string;
+}
+
+interface Column {
+  id: number | string;
+  title: string;
+  tasks: Task[];
+}
+
 const props = defineProps<{
-  column: {
-    id: number | string;
-    title: string;
-    tasks: any[];
-  }
+  column: Column
 }>()
 
-const emit = defineEmits(['taskChange', 'addTask'])
+const emit = defineEmits(['taskChange', 'addTask', 'openTaskModal'])
 
 const enabled = ref(true)
 const dragging = ref(false)
@@ -39,13 +47,20 @@ const addNewTask = () => {
     description: 'Task description'
   });
 }
+
+const openTaskModal = (task: Task) => {
+  emit('openTaskModal', task, props.column.id);
+}
 </script>
 
 <template>
   <div class="bg-gray-100 p-4 rounded-lg w-64">
     <h2 class="font-bold mb-2">{{ column.title }}</h2>
 
-    <button class="btn btn-secondary mb-2" @click="addNewTask">Add Task</button>
+    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2" @click="addNewTask">
+      Add Task
+    </button>
+
     <draggable
         :list="column.tasks"
         :disabled="!enabled"
@@ -58,12 +73,20 @@ const addNewTask = () => {
         group="tasks"
     >
       <template #item="{ element }">
-        <div class="list-group-item bg-white p-2 mb-2 rounded shadow">
+        <div
+            class="list-group-item bg-white p-2 mb-2 rounded shadow cursor-pointer"
+            @click="openTaskModal(element)"
+        >
           <h3 class="font-semibold">{{ element.title }}</h3>
           <p class="text-sm text-gray-600">{{ element.description }}</p>
         </div>
       </template>
     </draggable>
+
+    <div v-if="column.tasks.length === 0" class="text-gray-500 text-center py-4">
+      No tasks in this column
+    </div>
+
     <div class="mt-2">
       <small>{{ draggingInfo }}</small>
     </div>
