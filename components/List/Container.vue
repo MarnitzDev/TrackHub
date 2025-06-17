@@ -76,15 +76,17 @@ const handleCardChange = (event: any, listId: string) => {
   </div>
 </template>
 
-<!--<style scoped>-->
-<!--.ghost-card {-->
-<!--  @apply bg-gray-200 border border-gray-300 rounded-lg;-->
-<!--}-->
-<!--.ghost-card > div {-->
-<!--  @apply invisible;-->
-<!--}-->
+<style scoped>
+.ghost-card {
+  background-color: #e5e7eb;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  opacity: 0.5;
+}
 
-<!--.dragging-card {-->
-<!--  @apply transform rotate-2 shadow-xl cursor-grabbing;-->
-<!--}-->
-<!--</style>-->
+.dragging-card {
+  transform: rotate(2deg);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  cursor: grabbing;
+}
+</style>
