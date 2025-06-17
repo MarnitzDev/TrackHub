@@ -27,10 +27,6 @@ const activeListId = ref<string | null>(null)
 
 const editingCard = ref<Card | null>(null)
 
-watch(() => board.value, (newBoard) => {
-  console.log('Board data:', JSON.stringify(newBoard, null, 2))
-}, { immediate: true, deep: true })
-
 const createList = async () => {
   await $fetch(`/api/lists`, {
     method: 'POST',
@@ -112,6 +108,122 @@ const reorderCards = async ({ listId, cardIds }) => {
     // })
     await refresh()
   }
+}
+
+const editCard = (card: Card) => {
+  editingCard.value = card
+  newCardTitle.value = card.title
+  newCardDescription.value = card.description || ''
+  activeListId.value = card.listId
+  showCreateCardModal.value = true
+}
+
+const deleteCard = async (cardId: string) => {
+  if (!board.value) return
+
+  // Optimistic update
+  const list = board.value.lists.find(l => l.cards.some(c => c.id === cardId))
+  if (list) {
+    list.cards = list.cards.filter(c => c.id !== cardId)
+  }
+
+  try {
+    await $fetch(`/api/cards/${cardId}`, {
+      method: 'DELETE'
+    })
+  } catch (error) {
+    console.error('Error deleting card:', error)
+    // useToast().add({
+    //   title: 'Error',
+    //   description: 'Failed to delete card. Changes will be reverted.',
+    //   color: 'red'
+    // })
+    await refresh()
+  }
+}
+
+const createCard = async () => {
+  if (!activeListId.value) return
+
+  const newCard = {
+    title: newCardTitle.value,
+    description: newCardDescription.value,
+    listId: activeListId.value,
+    order: board.value?.lists.find(l => l.id === activeListId.value)?.cards.length || 0
+  }
+
+  // Optimistic update
+  const list = board.value?.lists.find(l => l.id === activeListId.value)
+  if (list) {
+    list.cards.push({ ...newCard, id: 'temp-id-' + Date.now() } as Card)
+  }
+
+  try {
+    const createdCard = await $fetch('/api/cards', {
+      method: 'POST',
+      body: newCard
+    })
+
+    // Update the temporary card with the real one
+    if (list) {
+      const index = list.cards.findIndex(c => c.id === 'temp-id-' + Date.now())
+      if (index !== -1) {
+        list.cards[index] = createdCard
+      }
+    }
+  } catch (error) {
+    console.error('Error creating card:', error)
+    // useToast().add({
+    //   title: 'Error',
+    //   description: 'Failed to create card. Changes will be reverted.',
+    //   color: 'red'
+    // })
+    await refresh()
+  }
+
+  showCreateCardModal.value = false
+  newCardTitle.value = ''
+  newCardDescription.value = ''
+  activeListId.value = null
+}
+
+const updateCard = async () => {
+  if (!editingCard.value) return
+
+  const updatedCard = {
+    ...editingCard.value,
+    title: newCardTitle.value,
+    description: newCardDescription.value
+  }
+
+  // Optimistic update
+  const list = board.value?.lists.find(l => l.id === editingCard.value?.listId)
+  if (list) {
+    const index = list.cards.findIndex(c => c.id === editingCard.value?.id)
+    if (index !== -1) {
+      list.cards[index] = updatedCard
+    }
+  }
+
+  try {
+    await $fetch(`/api/cards/${editingCard.value.id}`, {
+      method: 'PUT',
+      body: updatedCard
+    })
+  } catch (error) {
+    console.error('Error updating card:', error)
+    // useToast().add({
+    //   title: 'Error',
+    //   description: 'Failed to update card. Changes will be reverted.',
+    //   color: 'red'
+    // })
+    await refresh()
+  }
+
+  showCreateCardModal.value = false
+  editingCard.value = null
+  newCardTitle.value = ''
+  newCardDescription.value = ''
 }
 
 </script>
