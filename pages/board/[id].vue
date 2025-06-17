@@ -121,14 +121,46 @@ const updateCardList = async (cardId: string, newListId: string, newIndex: numbe
     await refresh()
   } catch (error) {
     console.error('Error updating card list:', error)
-    // Show an error message to the user
     useToast().add({
       title: 'Error',
       description: 'Failed to update card position. Please try again.',
       color: 'red'
     })
-    // Refresh the board to ensure UI is in sync with the server
     await refresh()
+  }
+}
+
+const reorderCards = async (listId: string, cardIds: string[]) => {
+  try {
+    const response = await $fetch(`/api/lists/${listId}/reorder`, {
+      method: 'PUT',
+      body: { cardIds }
+    })
+
+    if (!response) {
+      throw new Error('Failed to reorder cards')
+    }
+
+    // Update the local state to reflect the new order
+    if (board.value) {
+      const listIndex = board.value.lists.findIndex(list => list.id === listId)
+      if (listIndex !== -1) {
+        board.value.lists[listIndex].cards = cardIds.map((cardId, index) => {
+          const card = board.value!.lists[listIndex].cards.find(c => c.id === cardId)
+          return card ? { ...card, order: index } : null
+        }).filter((card): card is Card => card !== null)
+      }
+    }
+
+    // No need to call refresh() here as we've updated the local state
+  } catch (error) {
+    console.error('Error reordering cards:', error)
+    useToast().add({
+      title: 'Error',
+      description: 'Failed to reorder cards. Please try again.',
+      color: 'red'
+    })
+    await refresh() // Refresh only on error to revert to the previous state
   }
 }
 
@@ -145,6 +177,7 @@ const updateCardList = async (cardId: string, newListId: string, newIndex: numbe
         @editCard="editCard"
         @deleteCard="deleteCard"
         @updateCardList="updateCardList"
+        @reorderCards="reorderCards"
     />
 
     <button @click="showCreateListModal = true" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">
