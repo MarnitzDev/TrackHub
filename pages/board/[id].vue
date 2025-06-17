@@ -45,17 +45,22 @@ const openCreateCardModal = (listId: string) => {
   showCreateCardModal.value = true
 }
 
-const updateCardList = async ({ cardId, newListId, newIndex, oldListId }) => {
+const updateCardList = async ({ cardId, fromListId, toListId, newIndex }) => {
+  console.log("updateCardList", { cardId, fromListId, toListId, newIndex });
   if (!board.value) return
 
   // Optimistic update
-  const oldList = board.value.lists.find(list => list.id === oldListId)
-  const newList = board.value.lists.find(list => list.id === newListId)
+  const oldList = board.value.lists.find(list => list.id === fromListId)
+  const newList = board.value.lists.find(list => list.id === toListId)
   const card = oldList?.cards.find(c => c.id === cardId)
 
   if (oldList && newList && card) {
+    // Remove card from old list
     oldList.cards = oldList.cards.filter(c => c.id !== cardId)
-    newList.cards.splice(newIndex, 0, { ...card, listId: newListId })
+
+    // Add card to new list
+    const updatedCard = { ...card, listId: toListId, order: newIndex }
+    newList.cards.splice(newIndex, 0, updatedCard)
 
     // Update order of cards in both old and new lists
     oldList.cards.forEach((c, index) => {
@@ -67,10 +72,27 @@ const updateCardList = async ({ cardId, newListId, newIndex, oldListId }) => {
   }
 
   try {
-    await $fetch(`/api/cards/${cardId}`, {
+    // Update the card on the server
+    const updatedCard = await $fetch(`/api/cards/${cardId}`, {
       method: 'PUT',
-      body: { listId: newListId, order: newIndex }
+      body: {
+        listId: toListId,
+        order: newIndex
+      }
     })
+    console.log("Card updated successfully", updatedCard);
+
+    // Reorder cards in the new list
+    const updatedCardIds = newList?.cards.map(c => c.id) || []
+    await $fetch(`/api/lists/${toListId}/reorder`, {
+      method: 'PUT',
+      body: { cardIds: updatedCardIds }
+    })
+    console.log("List reordered successfully");
+
+    // Refresh the board data to ensure consistency
+    await refresh()
+
   } catch (error) {
     console.error('Error updating card list:', error)
     // useToast().add({
@@ -234,11 +256,12 @@ const updateCard = async () => {
 
     <ListContainer
         v-if="board.lists"
+        :board="board"
         :lists="board.lists"
         @createCard="openCreateCardModal"
         @editCard="editCard"
         @deleteCard="deleteCard"
-        @updateCardList="updateCardList"
+        @moveCard="updateCardList"
         @reorderCards="reorderCards"
     />
 

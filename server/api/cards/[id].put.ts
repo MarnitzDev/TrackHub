@@ -8,14 +8,22 @@ export default defineEventHandler(async (event) => {
 
     console.log('Received update data:', body)
 
+    // Ensure that at least one field is being updated
+    if (!body.title && !body.description && body.order === undefined && !body.listId) {
+        throw createError({
+            statusCode: 400,
+            statusMessage: 'No valid fields to update'
+        })
+    }
+
     try {
         const updatedCard = await prisma.card.update({
             where: { id },
             data: {
-                title: body.title,
-                description: body.description,
-                order: body.order,
-                listId: body.listId,
+                ...(body.title !== undefined && { title: body.title }),
+                ...(body.description !== undefined && { description: body.description }),
+                ...(body.order !== undefined && { order: body.order }),
+                ...(body.listId !== undefined && { listId: body.listId }),
             },
         })
 
