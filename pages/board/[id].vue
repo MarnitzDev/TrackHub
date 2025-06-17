@@ -28,9 +28,14 @@ const activeListId = ref<string | null>(null)
 const editingCard = ref<Card | null>(null)
 
 const createList = async () => {
+  const newListOrder = board.value?.lists.length || 0
   await $fetch(`/api/lists`, {
     method: 'POST',
-    body: { title: newListTitle.value, boardId }
+    body: {
+      title: newListTitle.value,
+      boardId,
+      order: newListOrder
+    }
   })
   await refresh()
   showCreateListModal.value = false
@@ -248,10 +253,26 @@ const updateCard = async () => {
   newCardDescription.value = ''
 }
 
+const reorderLists = async (newOrder: string[]) => {
+  console.log('Reordering lists:', newOrder);
+  try {
+    await $fetch(`/api/boards/${boardId}/reorder-lists`, {
+      method: 'PUT',
+      body: { listIds: newOrder }
+    });
+    console.log('Lists reordered successfully');
+    await refresh();
+  } catch (error) {
+    console.error('Error reordering lists:', error);
+    // Handle error (e.g., show toast notification)
+  }
+}
+
 </script>
 
 <template>
   <div v-if="board" class="mx-auto px-4 py-8">
+    <h1>BOARD</h1>
     <h1 class="text-3xl font-bold mb-6">{{ board.title }}</h1>
 
     <ListContainer
@@ -263,6 +284,7 @@ const updateCard = async () => {
         @deleteCard="deleteCard"
         @moveCard="updateCardList"
         @reorderCards="reorderCards"
+        @reorderLists="reorderLists"
     />
 
     <button @click="showCreateListModal = true" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">

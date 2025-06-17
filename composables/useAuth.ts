@@ -62,7 +62,8 @@ export const useAuth = () => {
             })
 
             if (!response.ok) {
-                throw new Error('Failed to save user to database')
+                const errorText = await response.text()
+                throw new Error(`Failed to save user to database: ${errorText}`)
             }
 
             return await response.json()

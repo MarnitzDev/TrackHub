@@ -1,9 +1,17 @@
+
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
-    const id = event.context.params.id
+    const id = event.context.params?.id
+
+    if (!id) {
+        throw createError({
+            statusCode: 400,
+            statusMessage: 'Board ID is required'
+        })
+    }
 
     try {
         const board = await prisma.board.findUnique({
@@ -12,6 +20,9 @@ export default defineEventHandler(async (event) => {
                 lists: {
                     include: {
                         cards: true
+                    },
+                    orderBy: {
+                        order: 'asc'
                     }
                 }
             }

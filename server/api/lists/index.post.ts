@@ -1,40 +1,32 @@
-import prisma from '~/server/db'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
+    const body = await readBody(event)
+
+    if (!body.title || !body.boardId || body.order === undefined) {
+        throw createError({
+            statusCode: 400,
+            statusMessage: 'Title, boardId, and order are required'
+        })
+    }
+
     try {
-        const body = await readBody(event)
-
-        // Validate the request body
-        if (!body.title || !body.boardId) {
-            throw createError({
-                statusCode: 400,
-                statusMessage: 'Title and boardId are required'
-            })
-        }
-
-        // Create a new list
         const newList = await prisma.list.create({
             data: {
                 title: body.title,
                 boardId: body.boardId,
+                order: body.order
             }
         })
 
         return newList
-
     } catch (error) {
         console.error('Error creating list:', error)
-
-        if (error.code === 'P2003') {
-            throw createError({
-                statusCode: 400,
-                statusMessage: 'Invalid boardId provided'
-            })
-        }
-
         throw createError({
             statusCode: 500,
-            statusMessage: 'An error occurred while creating the list'
+            statusMessage: 'Error creating list'
         })
     }
 })

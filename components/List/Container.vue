@@ -35,11 +35,12 @@ watch(boardLists, (newLists) => {
 }, { immediate: true, deep: true })
 
 const handleListChange = (event: any) => {
+  console.log('List change event:', event);
   if (event.moved) {
+    console.log('Lists reordered:', lists.value.map(list => ({ id: list.id, title: list.title })));
     emit('reorderLists', lists.value.map(list => list.id))
   }
 }
-
 const handleCreateCard = (listId: string) => {
   emit('createCard', listId)
 }
@@ -96,6 +97,7 @@ watch(boardLists, (newLists) => {
             @deleteList="handleDeleteList"
             @reorderCards="handleReorderCards"
             @moveCard="handleMoveCard"
+            @change="handleListChange"
         />
       </template>
   </draggable>

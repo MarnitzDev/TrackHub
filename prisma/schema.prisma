@@ -7,6 +7,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id      String  @id @default(cuid())
+  email   String  @unique
+  name    String?
+  auth0Id String  @unique
+}
+
 model Board {
   id          String   @id @default(uuid())
   title       String
@@ -19,6 +26,7 @@ model Board {
 model List {
   id        String   @id @default(uuid())
   title     String
+  order     Int
   boardId   String
   board     Board    @relation(fields: [boardId], references: [id])
   cards     Card[]
