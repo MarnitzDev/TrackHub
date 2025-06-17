@@ -104,13 +104,13 @@ const deleteCard = async (cardId: string) => {
   }
 }
 
-const updateCardList = async (cardId: string, newListId: string, newIndex: number) => {
+const updateCardList = async (cardId: string, newListId: string, newIndex: number, oldListId: string) => {
   try {
-    const response = await $fetch(`/api/cards/${cardId}`, {
+    const response = await $fetch(`/api/lists/${newListId}/reorder`, {
       method: 'PUT',
       body: {
-        listId: newListId,
-        order: newIndex
+        cardIds: board.value!.lists.find(list => list.id === newListId)?.cards.map(card => card.id) || [],
+        sourceListId: oldListId
       }
     })
 

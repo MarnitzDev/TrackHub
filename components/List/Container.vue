@@ -14,13 +14,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{
-  (e: 'createCard', listId: string): void
-  (e: 'editCard', card: Card): void
-  (e: 'deleteCard', cardId: string): void
-  (e: 'updateCardList', cardId: string, newListId: string, newIndex: number): void
-  (e: 'reorderCards', listId: string, cardIds: string[]): void
-}>()
+const emit = defineEmits(['createCard', 'editCard', 'deleteCard', 'updateCardList', 'reorderCards'])
 
 const localLists = ref<ListWithCards[]>([...props.lists])
 
@@ -40,16 +34,15 @@ const deleteCard = (cardId: string) => {
   emit('deleteCard', cardId)
 }
 
-const handleCardChange = async (e: any, listId: string) => {
-  console.log("handleCardChange: ", e, "listId: ", listId)
-  if (e.added) {
-    const { element: card, newIndex } = e.added
-    emit('updateCardList', card.id, listId, newIndex)
-  } else if (e.moved) {
-    const updatedCardIds = localLists.value
-        .find(list => list.id === listId)
-        ?.cards.map(card => card.id) || []
-    emit('reorderCards', listId, updatedCardIds)
+const handleCardChange = (event: any, listId: string) => {
+  if (event.added) {
+    const { element: card, newIndex } = event.added
+    emit('updateCardList', card.id, listId, newIndex, card.listId)
+  } else if (event.moved) {
+    const updatedList = localLists.value.find(list => list.id === listId)
+    if (updatedList) {
+      emit('reorderCards', listId, updatedList.cards.map(card => card.id))
+    }
   }
 }
 
