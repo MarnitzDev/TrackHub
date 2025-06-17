@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Board, List, Card } from '@prisma/client'
