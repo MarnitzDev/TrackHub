@@ -4,23 +4,35 @@ const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
     const id = event.context.params.id
+    const body = await readBody(event)
+
+    console.log('Received update data:', body)
 
     try {
-        const card = await prisma.card.findUnique({
+        const updatedCard = await prisma.card.update({
             where: { id },
+            data: {
+                title: body.title,
+                description: body.description,
+                order: body.order,
+                listId: body.listId,
+            },
         })
-        if (!card) {
+
+        return updatedCard
+    } catch (error) {
+        console.error('Error updating card:', error)
+
+        if (error.code === 'P2025') {
             throw createError({
                 statusCode: 404,
                 statusMessage: 'Card not found'
             })
         }
-        return card
-    } catch (error) {
-        console.error('Error fetching card:', error)
+
         throw createError({
             statusCode: 500,
-            statusMessage: 'Error fetching card'
+            statusMessage: `Error updating card: ${error.message}`
         })
     }
 })

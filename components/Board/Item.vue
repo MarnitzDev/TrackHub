@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Board } from '@prisma/client'
-import { useBoard } from '~/composables/useBoard'
+// import { useBoard } from '~/composables/useBoard'
 
 interface Props {
   board: Board;
@@ -11,7 +11,7 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits(['refresh'])
 
-const { deleteBoard } = useBoard()
+// const { deleteBoard } = useBoard()
 
 const isDeleting = ref(false)
 const showDeleteConfirm = ref(false)
@@ -40,7 +40,7 @@ const actions = ref([
 const confirmDelete = async () => {
   try {
     isDeleting.value = true
-    await deleteBoard(props.board.id)
+    // await deleteBoard(props.board.id)
     emit('refresh')
   } catch (error) {
     console.error('Failed to delete board:', error)

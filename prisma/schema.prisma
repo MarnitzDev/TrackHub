@@ -30,6 +30,7 @@ model Card {
   id          String   @id @default(uuid())
   title       String
   description String?
+  order       Int      @default(0)
   listId      String
   list        List     @relation(fields: [listId], references: [id])
   createdAt   DateTime @default(now())

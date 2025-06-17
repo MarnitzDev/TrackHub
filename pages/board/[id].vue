@@ -103,6 +103,35 @@ const deleteCard = async (cardId: string) => {
     console.error('Error deleting card:', error)
   }
 }
+
+const updateCardList = async (cardId: string, newListId: string, newIndex: number) => {
+  try {
+    const response = await $fetch(`/api/cards/${cardId}`, {
+      method: 'PUT',
+      body: {
+        listId: newListId,
+        order: newIndex
+      }
+    })
+
+    if (!response) {
+      throw new Error('Failed to update card')
+    }
+
+    await refresh()
+  } catch (error) {
+    console.error('Error updating card list:', error)
+    // Show an error message to the user
+    useToast().add({
+      title: 'Error',
+      description: 'Failed to update card position. Please try again.',
+      color: 'red'
+    })
+    // Refresh the board to ensure UI is in sync with the server
+    await refresh()
+  }
+}
+
 </script>
 
 <template>
@@ -115,6 +144,7 @@ const deleteCard = async (cardId: string) => {
         @createCard="openCreateCardModal"
         @editCard="editCard"
         @deleteCard="deleteCard"
+        @updateCardList="updateCardList"
     />
 
     <button @click="showCreateListModal = true" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">
