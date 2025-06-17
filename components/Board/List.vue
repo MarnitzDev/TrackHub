@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { Board } from '@prisma/client'
-import BoardCard from '~/components/Board/Card.vue'
+import BoardCard from '~/components/Board/Item.vue'
 import { useBoard } from '~/composables/useBoard'
 
 const { boards, loading, fetchBoards } = useBoard()

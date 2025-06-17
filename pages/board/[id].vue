@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Board, List, Card } from '@prisma/client'
-import CardItem from '~/components/Card/CardItem.vue'
+import CardItem from '~/components/List/Item.vue'
 
 
 const route = useRoute()
