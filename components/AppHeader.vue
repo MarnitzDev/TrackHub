@@ -40,15 +40,8 @@ const handleSignOut = async () => {
   try {
     await signOut({ redirect: false, callbackUrl: '/' })
     console.log('Sign out successful')
+    userStore.clearUser() // Clear user data from the store
     isUserMenuOpen.value = false
-
-    // Clear the user store
-    userStore.clearUser()
-
-    // Force refresh of auth state
-    await refreshNuxtData()
-
-    // Navigate to home page
     navigateTo('/')
   } catch (error) {
     console.error('Sign out failed:', error)
