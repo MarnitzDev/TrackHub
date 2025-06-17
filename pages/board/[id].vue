@@ -1,13 +1,21 @@
-<script setup lang="ts">
-import { ref } from 'vue'
-import { Board, List, Card } from '@prisma/client'
-import CardItem from '~/components/List/Item.vue'
 
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+import { Board, List, Card } from '@prisma/client'
+import ListContainer from '~/components/List/Container.vue'
+
+interface ListWithCards extends List {
+  cards: Card[]
+}
+
+interface BoardWithLists extends Board {
+  lists: ListWithCards[]
+}
 
 const route = useRoute()
 const boardId = route.params.id as string
 
-const { data: board, refresh } = await useFetch<Board & { lists: List[] }>(`/api/boards/${boardId}`)
+const { data: board, refresh } = await useFetch<BoardWithLists>(`/api/boards/${boardId}`)
 
 const showCreateListModal = ref(false)
 const newListTitle = ref('')
@@ -17,10 +25,16 @@ const newCardTitle = ref('')
 const newCardDescription = ref('')
 const activeListId = ref<string | null>(null)
 
+const editingCard = ref<Card | null>(null)
+
+watch(() => board.value, (newBoard) => {
+  console.log('Board data:', JSON.stringify(newBoard, null, 2))
+}, { immediate: true, deep: true })
+
 const createList = async () => {
   await $fetch(`/api/lists`, {
     method: 'POST',
-    body: { title: newListTitle.value, boardId: route.params.id }
+    body: { title: newListTitle.value, boardId }
   })
   await refresh()
   showCreateListModal.value = false
@@ -29,12 +43,13 @@ const createList = async () => {
 
 const openCreateCardModal = (listId: string) => {
   activeListId.value = listId
+  editingCard.value = null
+  newCardTitle.value = ''
+  newCardDescription.value = ''
   showCreateCardModal.value = true
 }
 
 const createCard = async () => {
-  console.log('Creating card:', newCardTitle.value, newCardDescription.value, activeListId.value)
-
   if (!activeListId.value) return
 
   await $fetch(`/api/cards`, {
@@ -53,13 +68,33 @@ const createCard = async () => {
 }
 
 const editCard = (card: Card) => {
-  // Implement edit functionality
-  console.log('Edit card:', card)
+  editingCard.value = card
+  newCardTitle.value = card.title
+  newCardDescription.value = card.description || ''
+  activeListId.value = card.listId
+  showCreateCardModal.value = true
+}
+
+const updateCard = async () => {
+  if (!editingCard.value) return
+
+  await $fetch(`/api/cards/${editingCard.value.id}`, {
+    method: 'PUT',
+    body: {
+      title: newCardTitle.value,
+      description: newCardDescription.value,
+      listId: activeListId.value
+    }
+  })
+  await refresh()
+  showCreateCardModal.value = false
+  newCardTitle.value = ''
+  newCardDescription.value = ''
+  editingCard.value = null
+  activeListId.value = null
 }
 
 const deleteCard = async (cardId: string) => {
-  // Implement delete functionality
-  console.log('Delete card:', cardId)
   try {
     await $fetch(`/api/cards/${cardId}`, {
       method: 'DELETE'
@@ -75,51 +110,49 @@ const deleteCard = async (cardId: string) => {
   <div v-if="board" class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-6">{{ board.title }}</h1>
 
-    <div class="flex space-x-4 overflow-x-auto">
-      <div v-for="list in board.lists" :key="list.id" class="bg-gray-100 p-4 rounded min-w-[250px]">
-        <h2 class="text-xl font-semibold mb-2">{{ list.title }}</h2>
-        <div class="space-y-2">
-          <CardItem
-              v-for="card in list.cards"
-              :key="card.id"
-              :card="card"
-              @edit="editCard"
-              @delete="deleteCard"
-          />
-          <button @click="openCreateCardModal(list.id)" class="w-full text-left p-2 text-gray-600 hover:bg-gray-200 rounded">
-            + Add a card
-          </button>
-        </div>
-      </div>
-    </div>
+    <ListContainer
+        v-if="board.lists"
+        :lists="board.lists"
+        @createCard="openCreateCardModal"
+        @editCard="editCard"
+        @deleteCard="deleteCard"
+    />
+
+    <button @click="showCreateListModal = true" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">
+      Add New List
+    </button>
 
     <!-- Create List Modal -->
-    <div v-if="showCreateListModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div class="bg-white p-6 rounded-lg">
-        <h2 class="text-2xl font-bold mb-4">Create New List</h2>
-        <form @submit.prevent="createList">
-          <input v-model="newListTitle" type="text" placeholder="List Title" class="w-full p-2 border rounded mb-4">
-          <div class="flex justify-end">
-            <button type="button" @click="showCreateListModal = false" class="mr-2 px-4 py-2 text-gray-600">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">Create</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <UModal :open="showCreateListModal">
+      <template #body>
+        <div class="p-4">
+          <h2 class="text-2xl font-bold mb-4">Create New List</h2>
+          <form @submit.prevent="createList">
+            <input v-model="newListTitle" type="text" placeholder="List Title" class="w-full p-2 border rounded mb-4">
+            <div class="flex justify-end">
+              <UButton type="button" @click="showCreateListModal = false" class="mr-2">Cancel</UButton>
+              <UButton type="submit" color="primary">Create</UButton>
+            </div>
+          </form>
+        </div>
+      </template>
+    </UModal>
 
-    <!-- Create Card Modal -->
-    <div v-if="showCreateCardModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div class="bg-white p-6 rounded-lg">
-        <h2 class="text-2xl font-bold mb-4">Create New Card</h2>
-        <form @submit.prevent="createCard">
-          <input v-model="newCardTitle" type="text" placeholder="Card Title" class="w-full p-2 border rounded mb-4">
-          <textarea v-model="newCardDescription" placeholder="Card Description" class="w-full p-2 border rounded mb-4"></textarea>
-          <div class="flex justify-end">
-            <button type="button" @click="showCreateCardModal = false" class="mr-2 px-4 py-2 text-gray-600">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">Create</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <!-- Create/Edit Card Modal -->
+    <UModal :open="showCreateCardModal">
+      <template #body>
+        <div class="p-4">
+          <h2 class="text-2xl font-bold mb-4">{{ editingCard ? 'Edit Card' : 'Create New Card' }}</h2>
+          <form @submit.prevent="editingCard ? updateCard() : createCard()">
+            <input v-model="newCardTitle" type="text" placeholder="Card Title" class="w-full p-2 border rounded mb-4">
+            <textarea v-model="newCardDescription" placeholder="Card Description" class="w-full p-2 border rounded mb-4"></textarea>
+            <div class="flex justify-end">
+              <UButton type="button" @click="showCreateCardModal = false" class="mr-2">Cancel</UButton>
+              <UButton type="submit" color="primary">{{ editingCard ? 'Update' : 'Create' }}</UButton>
+            </div>
+          </form>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
