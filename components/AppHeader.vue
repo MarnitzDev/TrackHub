@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useAuth } from '~/composables/useAuth'
+import { useAuth } from '#imports'
 import { useUserStore } from '~/stores/userStore'
 
-const { user, isAuthenticated, isUserGuest, signInWithAuth0, signOut, loadUser } = useAuth()
+const { status, data: session, signIn, signOut } = useAuth()
 const userStore = useUserStore()
+
+const isAuthenticated = computed(() => status.value === 'authenticated')
+const isUserGuest = computed(() => userStore.isGuest)
+const user = computed(() => session.value?.user || userStore.user)
 
 const userMetadata = computed(() => userStore.userMetadata)
 
@@ -15,7 +19,7 @@ const displayName = computed(() => {
 
 const avatarUrl = computed(() => {
   if (isUserGuest.value) return '/guest-avatar.png'
-  return user.value?.picture || userMetadata.value?.avatar_url
+  return user.value?.image || userMetadata.value?.avatar_url
 })
 
 const items = [
@@ -33,17 +37,33 @@ const toggleUserMenu = () => {
 }
 
 const handleSignOut = async () => {
-  await signOut()
-  isUserMenuOpen.value = false
+  try {
+    await signOut({ redirect: false, callbackUrl: '/' })
+    console.log('Sign out successful')
+    isUserMenuOpen.value = false
+
+    // Clear the user store
+    userStore.clearUser()
+
+    // Force refresh of auth state
+    await refreshNuxtData()
+
+    // Navigate to home page
+    navigateTo('/')
+  } catch (error) {
+    console.error('Sign out failed:', error)
+  }
 }
 
 const handleSignIn = () => {
-  signInWithAuth0()
+  signIn('google')
   isUserMenuOpen.value = false
 }
 
 onMounted(() => {
-  loadUser()
+  if (status.value === 'authenticated' && session.value?.user) {
+    userStore.setUser(session.value.user)
+  }
 })
 </script>
 

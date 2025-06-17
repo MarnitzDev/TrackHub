@@ -1,4 +1,4 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
@@ -14,21 +14,23 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@nuxt/ui',
     '@nuxt/test-utils',
-    '@pinia/nuxt',
     'pinia-plugin-persistedstate/nuxt',
+    '@sidebase/nuxt-auth'
   ],
-  plugins: [
-    '~/plugins/auth0.ts'
-  ],
-  runtimeConfig: {
-    databaseUrl: process.env.DATABASE_URL,
-    public: {
-      auth0: {
-        domain: process.env.AUTH0_DOMAIN,
-        clientId: process.env.AUTH0_CLIENT_ID,
-        audience: process.env.AUTH0_AUDIENCE,
-        redirectUri: process.env.AUTH0_CALLBACK_URL,
-      }
+  auth: {
+    origin: process.env.ORIGIN || 'http://localhost:3000',
+    enableGlobalAppMiddleware: true,
+    provider: {
+      type: 'authjs'
     },
+    globalMiddlewareOptions: {
+      allow404WithoutAuth: true,
+      addDefaultCallbackUrl: true
+    }
+  },
+  runtimeConfig: {
+    public: {
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    }
   }
 })

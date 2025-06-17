@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { useAuth0 } from '@auth0/auth0-vue'
-import { useAuth } from '~/composables/useAuth'
+import { useAuth } from '#imports'
 
 definePageMeta({
   layout: 'auth'
 })
 
-const { loginWithRedirect } = useAuth0()
-const { continueAsGuest } = useAuth()
+const { signIn } = useAuth()
 
-const handleAuth0SignIn = () => {
-  loginWithRedirect()
+const handleGoogleSignIn = () => {
+  signIn('google')
 }
 
 const handleContinueAsGuest = () => {
-  continueAsGuest()
+  // Implement guest login logic here
+  // For example:
+  // useUserStore().setGuestUser()
+  // navigateTo('/')
 }
 </script>
 
@@ -25,10 +26,10 @@ const handleContinueAsGuest = () => {
       <UButton
           block
           color="primary"
-          @click="handleAuth0SignIn"
+          @click="handleGoogleSignIn"
       >
-        <UIcon name="i-logos-auth0-icon" class="mr-2" />
-        Sign in with Auth0
+        <UIcon name="i-logos-google-icon" class="mr-2" />
+        Sign in with Google
       </UButton>
       <UButton
           block

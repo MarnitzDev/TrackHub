@@ -1,19 +1,22 @@
 import { ref } from 'vue'
-import { useFetch } from 'nuxt/app'
+import { useUserStore } from '~/stores/userStore'
 
 export const useBoard = () => {
+    const userStore = useUserStore()
     const boards = ref([])
     const loading = ref(false)
     const error = ref(null)
 
     const fetchBoards = async () => {
+        if (!userStore.isAuthenticated) {
+            error.value = 'User is not authenticated'
+            return
+        }
+
         loading.value = true
         error.value = null
         try {
-            const { data, error: fetchError } = await useFetch('/api/boards')
-            if (fetchError.value) {
-                throw new Error(fetchError.value.message || 'Failed to fetch boards')
-            }
+            const { data } = await useFetch('/api/boards')
             boards.value = data.value
         } catch (e: any) {
             console.error('Error fetching boards:', e)
@@ -24,6 +27,10 @@ export const useBoard = () => {
     }
 
     const createBoard = async (boardData: { title: string, description?: string }) => {
+        if (!userStore.isAuthenticated) {
+            throw new Error('User is not authenticated')
+        }
+
         try {
             const { data, error } = await useFetch('/api/boards', {
                 method: 'POST',
@@ -32,7 +39,7 @@ export const useBoard = () => {
             if (error.value) {
                 throw new Error(error.value.message || 'Failed to create board')
             }
-            await fetchBoards() // Refresh the board list
+            await fetchBoards()
             return data.value
         } catch (e: any) {
             console.error('Error creating board:', e)
@@ -41,6 +48,10 @@ export const useBoard = () => {
     }
 
     const destroy = async (id: string): Promise<boolean> => {
+        if (!userStore.isAuthenticated) {
+            throw new Error('User is not authenticated')
+        }
+
         try {
             const { error } = await useFetch(`/api/boards/${id}`, {
                 method: 'DELETE',
@@ -59,6 +70,11 @@ export const useBoard = () => {
     }
 
     const confirmDestroy = (id: string, onConfirm: () => void) => {
+        if (!userStore.isAuthenticated) {
+            console.error('User is not authenticated')
+            return
+        }
+
         // Implement confirmation logic here
         // For now, we'll just call destroy directly
         destroy(id).then((success) => {
