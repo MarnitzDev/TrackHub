@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import draggable from 'vuedraggable'
 import { List, Card } from '@prisma/client'
 import CardItem from '~/components/List/Item.vue'
@@ -37,26 +37,36 @@ const deleteCard = (cardId: string) => {
 const handleCardChange = (event: any, listId: string) => {
   if (event.added) {
     const { element: card, newIndex } = event.added
-    emit('updateCardList', card.id, listId, newIndex, card.listId)
+    emit('updateCardList', { cardId: card.id, newListId: listId, newIndex, oldListId: card.listId })
   } else if (event.moved) {
+    const { oldIndex, newIndex } = event.moved
     const updatedList = localLists.value.find(list => list.id === listId)
     if (updatedList) {
-      emit('reorderCards', listId, updatedList.cards.map(card => card.id))
+      const cardIds = updatedList.cards.map(card => card.id)
+      const [movedCardId] = cardIds.splice(oldIndex, 1)
+      cardIds.splice(newIndex, 0, movedCardId)
+      emit('reorderCards', { listId, cardIds })
     }
   }
 }
+
+const lists = computed(() => localLists.value.map(list => ({
+  ...list,
+  cards: list.cards.sort((a, b) => a.order - b.order)
+})))
 
 </script>
 
 <template>
   <div class="flex space-x-4 overflow-x-auto">
-    <div v-for="list in localLists" :key="list.id" class="bg-gray-100 p-4 rounded min-w-[250px]">
+    <div v-for="list in lists" :key="list.id" class="bg-gray-100 p-4 rounded min-w-[250px]">
       <h2 class="text-xl font-semibold mb-2">{{ list.title }}</h2>
       <draggable
           :list="list.cards"
           group="cards"
           item-key="id"
           class="space-y-2"
+          :force-fallback="true"
           ghost-class="ghost-card"
           drag-class="dragging-card"
           @change="(e) => handleCardChange(e, list.id)"

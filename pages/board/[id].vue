@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { Board, List, Card } from '@prisma/client'
 import ListContainer from '~/components/List/Container.vue'
+// import { useToast } from '@nuxt/ui'
 
 interface ListWithCards extends List {
   cards: Card[]
@@ -48,119 +49,68 @@ const openCreateCardModal = (listId: string) => {
   showCreateCardModal.value = true
 }
 
-const createCard = async () => {
-  if (!activeListId.value) return
+const updateCardList = async ({ cardId, newListId, newIndex, oldListId }) => {
+  if (!board.value) return
 
-  await $fetch(`/api/cards`, {
-    method: 'POST',
-    body: {
-      title: newCardTitle.value,
-      description: newCardDescription.value,
-      listId: activeListId.value
-    }
-  })
-  await refresh()
-  showCreateCardModal.value = false
-  newCardTitle.value = ''
-  newCardDescription.value = ''
-  activeListId.value = null
-}
+  // Optimistic update
+  const oldList = board.value.lists.find(list => list.id === oldListId)
+  const newList = board.value.lists.find(list => list.id === newListId)
+  const card = oldList?.cards.find(c => c.id === cardId)
 
-const editCard = (card: Card) => {
-  editingCard.value = card
-  newCardTitle.value = card.title
-  newCardDescription.value = card.description || ''
-  activeListId.value = card.listId
-  showCreateCardModal.value = true
-}
+  if (oldList && newList && card) {
+    oldList.cards = oldList.cards.filter(c => c.id !== cardId)
+    newList.cards.splice(newIndex, 0, { ...card, listId: newListId })
 
-const updateCard = async () => {
-  if (!editingCard.value) return
+    // Update order of cards in both old and new lists
+    oldList.cards.forEach((c, index) => {
+      c.order = index
+    })
+    newList.cards.forEach((c, index) => {
+      c.order = index
+    })
+  }
 
-  await $fetch(`/api/cards/${editingCard.value.id}`, {
-    method: 'PUT',
-    body: {
-      title: newCardTitle.value,
-      description: newCardDescription.value,
-      listId: activeListId.value
-    }
-  })
-  await refresh()
-  showCreateCardModal.value = false
-  newCardTitle.value = ''
-  newCardDescription.value = ''
-  editingCard.value = null
-  activeListId.value = null
-}
-
-const deleteCard = async (cardId: string) => {
   try {
     await $fetch(`/api/cards/${cardId}`, {
-      method: 'DELETE'
-    })
-    await refresh()
-  } catch (error) {
-    console.error('Error deleting card:', error)
-  }
-}
-
-const updateCardList = async (cardId: string, newListId: string, newIndex: number, oldListId: string) => {
-  try {
-    const response = await $fetch(`/api/lists/${newListId}/reorder`, {
       method: 'PUT',
-      body: {
-        cardIds: board.value!.lists.find(list => list.id === newListId)?.cards.map(card => card.id) || [],
-        sourceListId: oldListId
-      }
+      body: { listId: newListId, order: newIndex }
     })
-
-    if (!response) {
-      throw new Error('Failed to update card')
-    }
-
-    await refresh()
   } catch (error) {
     console.error('Error updating card list:', error)
-    useToast().add({
-      title: 'Error',
-      description: 'Failed to update card position. Please try again.',
-      color: 'red'
-    })
+    // useToast().add({
+    //   title: 'Error',
+    //   description: 'Failed to update card position. Changes will be reverted.',
+    //   color: 'red'
+    // })
     await refresh()
   }
 }
 
-const reorderCards = async (listId: string, cardIds: string[]) => {
+const reorderCards = async ({ listId, cardIds }) => {
+  if (!board.value) return
+
+  // Optimistic update
+  const list = board.value.lists.find(l => l.id === listId)
+  if (list) {
+    list.cards = cardIds.map((id, index) => {
+      const card = list.cards.find(c => c.id === id)
+      return card ? { ...card, order: index } : null
+    }).filter(Boolean) as Card[]
+  }
+
   try {
-    const response = await $fetch(`/api/lists/${listId}/reorder`, {
+    await $fetch(`/api/lists/${listId}/reorder`, {
       method: 'PUT',
       body: { cardIds }
     })
-
-    if (!response) {
-      throw new Error('Failed to reorder cards')
-    }
-
-    // Update the local state to reflect the new order
-    if (board.value) {
-      const listIndex = board.value.lists.findIndex(list => list.id === listId)
-      if (listIndex !== -1) {
-        board.value.lists[listIndex].cards = cardIds.map((cardId, index) => {
-          const card = board.value!.lists[listIndex].cards.find(c => c.id === cardId)
-          return card ? { ...card, order: index } : null
-        }).filter((card): card is Card => card !== null)
-      }
-    }
-
-    // No need to call refresh() here as we've updated the local state
   } catch (error) {
     console.error('Error reordering cards:', error)
-    useToast().add({
-      title: 'Error',
-      description: 'Failed to reorder cards. Please try again.',
-      color: 'red'
-    })
-    await refresh() // Refresh only on error to revert to the previous state
+    // useToast().add({
+    //   title: 'Error',
+    //   description: 'Failed to reorder cards. Changes will be reverted.',
+    //   color: 'red'
+    // })
+    await refresh()
   }
 }
 
