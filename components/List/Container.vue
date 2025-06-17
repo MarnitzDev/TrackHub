@@ -58,14 +58,14 @@ const lists = computed(() => localLists.value.map(list => ({
 </script>
 
 <template>
-  <div class="flex space-x-4 overflow-x-auto">
+  <div class="flex space-x-4">
     <div v-for="list in lists" :key="list.id" class="bg-gray-100 p-4 rounded min-w-[250px]">
       <h2 class="text-xl font-semibold mb-2">{{ list.title }}</h2>
       <draggable
           :list="list.cards"
           group="cards"
           item-key="id"
-          class="space-y-2"
+          class="draggable-list space-y-2"
           :force-fallback="true"
           ghost-class="ghost-card"
           drag-class="dragging-card"
@@ -98,5 +98,9 @@ const lists = computed(() => localLists.value.map(list => ({
   transform: rotate(2deg);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   cursor: grabbing;
+}
+
+.draggable-list {
+  user-select: none;
 }
 </style>
