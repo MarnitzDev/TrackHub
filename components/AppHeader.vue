@@ -2,9 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '#imports'
 import { useUserStore } from '~/stores/userStore'
+import { useBoardStore } from '~/stores/boardStore'
 
 const { status, data: session, signIn, signOut } = useAuth()
 const userStore = useUserStore()
+const boardStore = useBoardStore()
 
 const isAuthenticated = computed(() => status.value === 'authenticated')
 const isUserGuest = computed(() => userStore.isGuest)
@@ -63,6 +65,9 @@ const handleSignIn = () => {
 onMounted(() => {
   if (status.value === 'authenticated' && session.value?.user) {
     userStore.setUser(session.value.user)
+  } else {
+    userStore.$reset()
+    boardStore.$reset()
   }
 })
 </script>
