@@ -38,13 +38,20 @@ const toggleUserMenu = () => {
 
 const handleSignOut = async () => {
   try {
-    await signOut({ redirect: false, callbackUrl: '/' })
-    console.log('Sign out successful')
-    userStore.clearUser() // Clear user data from the store
-    isUserMenuOpen.value = false
-    navigateTo('/')
+    await signOut()
+    // Clear user data
+    userStore.$reset()
+    // Clear board data
+    boardStore.$reset()
+    // Clear any other relevant stores
+
+    // Optionally, you can also clear local storage
+    localStorage.clear()
+
+    // Redirect to login page or home page
+    navigateTo('/auth/login')
   } catch (error) {
-    console.error('Sign out failed:', error)
+    console.error('Error during sign out:', error)
   }
 }
 
