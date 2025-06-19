@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia'
-import { Board } from '@prisma/client'
+import {defineStore} from 'pinia'
+import {Board} from '@prisma/client'
 
 export const useBoardStore = defineStore('board', {
     state: () => ({
@@ -13,7 +13,7 @@ export const useBoardStore = defineStore('board', {
             this.loading = true
             this.error = null
             try {
-                const { data } = await useFetch('/api/boards')
+                const {data} = await useFetch('/api/boards')
                 this.boards = data.value
             } catch (e: any) {
                 console.error('Error fetching boards:', e)
@@ -25,7 +25,7 @@ export const useBoardStore = defineStore('board', {
         async createBoard(boardData: { title: string, description?: string }) {
             console.log('boardStore: createBoard')
             try {
-                const { data, error } = await useFetch('/api/boards', {
+                const {data, error} = await useFetch('/api/boards', {
                     method: 'POST',
                     body: boardData
                 })
@@ -42,7 +42,7 @@ export const useBoardStore = defineStore('board', {
         async destroyBoard(id: string): Promise<boolean> {
             console.log('boardStore: destroyBoard')
             try {
-                const { error } = await useFetch(`/api/boards/${id}`, {
+                const {error} = await useFetch(`/api/boards/${id}`, {
                     method: 'DELETE',
                 })
                 if (error.value) {

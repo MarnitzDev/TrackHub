@@ -7,30 +7,27 @@ import { storeToRefs } from 'pinia'
 
 const boardStore = useBoardStore()
 const { boards, loading, error } = storeToRefs(boardStore)
-const { fetchBoards } = boardStore
 
 const showCreateBoardModal = ref(false)
 const newBoardTitle = ref('')
 const newBoardDescription = ref('')
 
 const handleEditBoard = (board: Board) => {
-  // Implement edit functionality
   console.log('Edit board:', board)
-  // You might want to open an edit modal or navigate to an edit page
+  // Implement edit functionality
 }
 
 const handleCreateBoard = async () => {
   if (!newBoardTitle.value.trim()) return
 
   try {
-    await createBoard({
+    await boardStore.createBoard({
       title: newBoardTitle.value,
       description: newBoardDescription.value
     })
     newBoardTitle.value = ''
     newBoardDescription.value = ''
     showCreateBoardModal.value = false
-    await fetchBoards()
     // toast.success('Board created successfully!')
   } catch (error) {
     console.error('Error creating board:', error)
@@ -44,7 +41,7 @@ const closeModal = () => {
   newBoardDescription.value = ''
 }
 
-onMounted(fetchBoards)
+onMounted(() => boardStore.fetchBoards())
 </script>
 
 <template>
@@ -52,7 +49,7 @@ onMounted(fetchBoards)
     <h2 class="text-3xl font-bold mb-6">Your Boards</h2>
 
     <div v-if="loading" class="flex justify-center items-center h-64">
-      <USpinner size="lg" />
+      <p>Loading...</p>
     </div>
 
     <div v-else-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
@@ -76,7 +73,7 @@ onMounted(fetchBoards)
           :key="board.id"
           :board="board"
           :onEdit="handleEditBoard"
-          @refresh="fetchBoards"
+          @refresh="boardStore.fetchBoards"
       />
     </div>
 
@@ -125,9 +122,10 @@ onMounted(fetchBoards)
               </button>
               <button
                   type="submit"
-                  class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  :disabled="loading"
+                  class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
-                Create Board
+                {{ loading ? 'Creating...' : 'Create Board' }}
               </button>
             </div>
           </form>
