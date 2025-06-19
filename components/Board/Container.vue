@@ -2,9 +2,12 @@
 import { ref, onMounted } from 'vue'
 import { Board } from '@prisma/client'
 import BoardCard from '~/components/Board/Item.vue'
-import { useBoard } from '~/composables/useBoard'
+import { useBoardStore } from '~/stores/boardStore'
+import { storeToRefs } from 'pinia'
 
-const { boards, loading, error, fetchBoards, createBoard } = useBoard()
+const boardStore = useBoardStore()
+const { boards, loading, error } = storeToRefs(boardStore)
+const { fetchBoards } = boardStore
 
 const showCreateBoardModal = ref(false)
 const newBoardTitle = ref('')

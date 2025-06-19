@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { Board } from '~/types' // Assuming you have a Board type defined
+import { Board } from '@prisma/client'
 
 export const useBoardStore = defineStore('board', {
     state: () => ({
@@ -7,61 +7,53 @@ export const useBoardStore = defineStore('board', {
         loading: false,
         error: null as string | null,
     }),
-
     actions: {
         async fetchBoards() {
+            console.log('boardStore: fetchBoards')
             this.loading = true
             this.error = null
             try {
-                const response = await $fetch('/api/boards')
-                this.boards = response
-            } catch (error) {
-                console.error('Error fetching boards:', error)
-                this.error = 'Failed to fetch boards'
+                const { data } = await useFetch('/api/boards')
+                this.boards = data.value
+            } catch (e: any) {
+                console.error('Error fetching boards:', e)
+                this.error = e.message
             } finally {
                 this.loading = false
             }
         },
-
-        async createBoard(boardData: { title: string; description?: string }) {
-            this.loading = true
-            this.error = null
+        async createBoard(boardData: { title: string, description?: string }) {
+            console.log('boardStore: createBoard')
             try {
-                const newBoard = await $fetch('/api/boards', {
+                const { data, error } = await useFetch('/api/boards', {
                     method: 'POST',
-                    body: boardData,
+                    body: boardData
                 })
-                this.boards.push(newBoard)
-                return newBoard
-            } catch (error) {
-                console.error('Error creating board:', error)
-                this.error = 'Failed to create board'
-                throw error
-            } finally {
-                this.loading = false
+                if (error.value) {
+                    throw new Error(error.value.message || 'Failed to create board')
+                }
+                await this.fetchBoards()
+                return data.value
+            } catch (e: any) {
+                console.error('Error creating board:', e)
+                throw e
             }
         },
-
-        async deleteBoard(boardId: string) {
-            this.loading = true
-            this.error = null
+        async destroyBoard(id: string): Promise<boolean> {
+            console.log('boardStore: destroyBoard')
             try {
-                await $fetch(`/api/boards/${boardId}`, {
+                const { error } = await useFetch(`/api/boards/${id}`, {
                     method: 'DELETE',
                 })
-                this.boards = this.boards.filter(board => board.id !== boardId)
-            } catch (error) {
-                console.error('Error deleting board:', error)
-                this.error = 'Failed to delete board'
-                throw error
-            } finally {
-                this.loading = false
+                if (error.value) {
+                    throw new Error(error.value.message || 'Failed to delete board')
+                }
+                await this.fetchBoards()
+                return true
+            } catch (e: any) {
+                console.error('Error deleting board:', e)
+                return false
             }
-        },
-
-        clearBoards() {
-            this.boards = []
-            this.error = null
         },
     },
 })
