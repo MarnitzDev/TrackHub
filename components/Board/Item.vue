@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Board } from '@prisma/client'
-// import { useBoard } from '~/composables/useBoard'
+import { useBoardStore } from '~/stores/boardStore'
 
 interface Props {
   board: Board;
-  onEdit?: (board: Board) => void;
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['refresh'])
-
-// const { deleteBoard } = useBoard()
+const boardStore = useBoardStore()
 
 const isDeleting = ref(false)
 const showDeleteConfirm = ref(false)
@@ -21,8 +18,9 @@ const actions = ref([
     {
       label: "Edit",
       icon: "i-lucide-pencil",
-      click: () => {
-        props.onEdit?.(props.board)
+      onSelect: () => {
+        console.log('Edit board:', props.board);
+        boardStore.setEditingBoard(props.board)
       },
     },
   ],
@@ -30,7 +28,7 @@ const actions = ref([
     {
       label: "Delete",
       icon: "i-lucide-trash-2",
-      click: () => {
+      onSelect: () => {
         showDeleteConfirm.value = true
       },
     },
@@ -40,8 +38,7 @@ const actions = ref([
 const confirmDelete = async () => {
   try {
     isDeleting.value = true
-    // await deleteBoard(props.board.id)
-    emit('refresh')
+    await boardStore.deleteBoard(props.board.id)
   } catch (error) {
     console.error('Failed to delete board:', error)
     // You might want to show an error message to the user here
@@ -72,7 +69,7 @@ const confirmDelete = async () => {
         >
           {{ board.title }}
         </NuxtLink>
-        <UDropdownMenu :items="actions"  :content="{ align: 'start' }" :ui="{ content: 'w-48' }">
+        <UDropdownMenu :items="actions" :content="{ align: 'start' }" :ui="{ content: 'w-48' }">
           <UButton color="neutral" variant="subtle" icon="i-lucide-settings" />
         </UDropdownMenu>
       </div>

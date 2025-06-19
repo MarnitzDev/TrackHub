@@ -1,21 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Board } from '@prisma/client'
-import BoardCard from '~/components/Board/Item.vue'
-import { useBoardStore } from '~/stores/boardStore'
+import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useBoardStore } from '~/stores/boardStore'
+import BoardCard from '~/components/Board/Item.vue'
 
 const boardStore = useBoardStore()
-const { boards, loading, error } = storeToRefs(boardStore)
+const { boards, loading, error, editingBoard } = storeToRefs(boardStore)
 
 const showCreateBoardModal = ref(false)
+const showEditBoardModal = computed(() => !!editingBoard.value)
 const newBoardTitle = ref('')
 const newBoardDescription = ref('')
-
-const handleEditBoard = (board: Board) => {
-  console.log('Edit board:', board)
-  // Implement edit functionality
-}
 
 const handleCreateBoard = async () => {
   if (!newBoardTitle.value.trim()) return
@@ -25,9 +20,7 @@ const handleCreateBoard = async () => {
       title: newBoardTitle.value,
       description: newBoardDescription.value
     })
-    newBoardTitle.value = ''
-    newBoardDescription.value = ''
-    showCreateBoardModal.value = false
+    closeCreateModal()
     // toast.success('Board created successfully!')
   } catch (error) {
     console.error('Error creating board:', error)
@@ -35,8 +28,31 @@ const handleCreateBoard = async () => {
   }
 }
 
-const closeModal = () => {
+const handleUpdateBoard = async () => {
+  if (!editingBoard.value || !newBoardTitle.value.trim()) return
+
+  try {
+    await boardStore.updateBoard({
+      id: editingBoard.value.id,
+      title: newBoardTitle.value,
+      description: newBoardDescription.value
+    })
+    closeEditModal()
+    // toast.success('Board updated successfully!')
+  } catch (error) {
+    console.error('Error updating board:', error)
+    // toast.error('Failed to update board. Please try again.')
+  }
+}
+
+const closeCreateModal = () => {
   showCreateBoardModal.value = false
+  newBoardTitle.value = ''
+  newBoardDescription.value = ''
+}
+
+const closeEditModal = () => {
+  boardStore.setEditingBoard(null)
   newBoardTitle.value = ''
   newBoardDescription.value = ''
 }
@@ -72,8 +88,6 @@ onMounted(() => boardStore.fetchBoards())
           v-for="board in boards"
           :key="board.id"
           :board="board"
-          :onEdit="handleEditBoard"
-          @refresh="boardStore.fetchBoards"
       />
     </div>
 
@@ -87,15 +101,27 @@ onMounted(() => boardStore.fetchBoards())
     </button>
 
     <!-- Create Board Modal -->
-    <UModal :open="showCreateBoardModal" @close="closeModal">
+    <UModal :open="showCreateBoardModal" @close="closeCreateModal">
       <template #content>
         <div class="p-6">
           <h2 class="text-2xl font-bold mb-6">Create New Board</h2>
           <form @submit.prevent="handleCreateBoard" class="space-y-6">
+            <!-- ... (form fields remain the same) ... -->
+          </form>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Edit Board Modal -->
+    <UModal :open="showEditBoardModal" @close="closeEditModal">
+      <template #content>
+        <div class="p-6">
+          <h2 class="text-2xl font-bold mb-6">Edit Board</h2>
+          <form @submit.prevent="handleUpdateBoard" class="space-y-6">
             <div>
-              <label for="boardTitle" class="block text-sm font-medium text-gray-700 mb-1">Title:</label>
+              <label for="editBoardTitle" class="block text-sm font-medium text-gray-700 mb-1">Title:</label>
               <input
-                  id="boardTitle"
+                  id="editBoardTitle"
                   v-model="newBoardTitle"
                   required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -103,9 +129,9 @@ onMounted(() => boardStore.fetchBoards())
               >
             </div>
             <div>
-              <label for="boardDescription" class="block text-sm font-medium text-gray-700 mb-1">Description:</label>
+              <label for="editBoardDescription" class="block text-sm font-medium text-gray-700 mb-1">Description:</label>
               <textarea
-                  id="boardDescription"
+                  id="editBoardDescription"
                   v-model="newBoardDescription"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   rows="3"
@@ -115,7 +141,7 @@ onMounted(() => boardStore.fetchBoards())
             <div class="flex justify-end space-x-3">
               <button
                   type="button"
-                  @click="closeModal"
+                  @click="closeEditModal"
                   class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Cancel
@@ -125,7 +151,7 @@ onMounted(() => boardStore.fetchBoards())
                   :disabled="loading"
                   class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
-                {{ loading ? 'Creating...' : 'Create Board' }}
+                {{ loading ? 'Updating...' : 'Update Board' }}
               </button>
             </div>
           </form>
