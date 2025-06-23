@@ -1,8 +1,10 @@
+
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { Card } from '@prisma/client'
 import CardItem from './Item.vue'
+import CardModal from './CardModal.vue'
 
 interface Props {
   cards: Card[]
@@ -19,6 +21,8 @@ const emit = defineEmits<{
 }>()
 
 const localCards = ref<Card[]>(props.cards)
+const isCardModalOpen = ref(false)
+const selectedCard = ref<Card | null>(null)
 
 watch(() => props.cards, (newCards) => {
   localCards.value = newCards
@@ -41,12 +45,31 @@ const handleCardChange = (event: any) => {
   }
 }
 
+const openCardModal = (card: Card) => {
+  selectedCard.value = card
+  isCardModalOpen.value = true
+}
+
 const editCard = (card: Card) => {
   emit('editCard', card)
 }
 
 const deleteCard = (cardId: string) => {
   emit('deleteCard', cardId)
+}
+
+const handleCardSave = (updatedCard: Card) => {
+  const index = localCards.value.findIndex(card => card.id === updatedCard.id)
+  if (index !== -1) {
+    localCards.value[index] = updatedCard
+  }
+  emit('editCard', updatedCard)
+  isCardModalOpen.value = false
+}
+
+const handleCardDelete = (cardId: string) => {
+  emit('deleteCard', cardId)
+  isCardModalOpen.value = false
 }
 </script>
 
@@ -65,9 +88,17 @@ const deleteCard = (cardId: string) => {
           :card="card"
           @edit="editCard"
           @delete="deleteCard"
+          @open="openCardModal"
       />
     </template>
   </draggable>
+
+  <CardModal
+      v-model:isOpen="isCardModalOpen"
+      :card="selectedCard"
+      @save="handleCardSave"
+      @delete="handleCardDelete"
+  />
 </template>
 
 <style scoped>
