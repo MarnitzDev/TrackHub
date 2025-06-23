@@ -62,9 +62,23 @@ const handleEditList = (listId: string, updatedData: Partial<List>) => {
   emit('editList', { listId, updatedData })
 }
 
-const handleDeleteList = (listId: string) => {
+// const handleDeleteList = (listId: string) => {
+//   console.log('handleDeleteList called with listId:', listId);
+//   emit('deleteList', { listId })
+// }
+
+const handleDeleteList = async (listId: string) => {
   console.log('handleDeleteList called with listId:', listId);
-  emit('deleteList', { listId })
+  try {
+    await listStore.deleteList(listId)
+    console.log('List deleted successfully')
+    // Optionally, you can emit an event to notify the parent component
+    emit('listDeleted', listId)
+  } catch (error) {
+    console.error('Error deleting list:', error)
+    // Optionally, you can emit an error event or handle the error in some way
+    emit('listDeleteError', { listId, error })
+  }
 }
 
 const handleReorderCards = (listId: string, cardIds: string[]) => {
