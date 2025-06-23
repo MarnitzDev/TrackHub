@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { Board } from '@prisma/client'
+import { Board, List } from '@prisma/client'
 
 export const useBoardStore = defineStore('board', {
     state: () => ({
@@ -75,6 +75,24 @@ export const useBoardStore = defineStore('board', {
             } catch (e: any) {
                 console.error('Error deleting board:', e)
                 return false
+            }
+        },
+
+        addListToCurrentBoard(newList: List) {
+            console.log('boardStore: addListToCurrentBoard', newList)
+            const currentBoard = this.boards.find(board => board.id === newList.boardId)
+            if (currentBoard) {
+                if (!Array.isArray(currentBoard.lists)) {
+                    currentBoard.lists = []
+                }
+                currentBoard.lists.push(newList)
+                // Update the board in the boards array
+                const boardIndex = this.boards.findIndex(board => board.id === newList.boardId)
+                if (boardIndex !== -1) {
+                    this.boards[boardIndex] = { ...currentBoard }
+                }
+            } else {
+                console.error('Current board not found when adding new list')
             }
         },
     },

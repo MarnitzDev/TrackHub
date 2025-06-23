@@ -10,18 +10,40 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'createCard', listId: string): void
-  (e: 'editList', list: List): void
+  (e: 'editCard', cardId: string, updatedData: Partial<Card>): void
+  (e: 'deleteCard', cardId: string, listId: string): void
+  (e: 'editList', listId: string, updatedData: Partial<List>): void
   (e: 'deleteList', listId: string): void
   (e: 'reorderCards', payload: { listId: string, cardIds: string[] }): void
   (e: 'moveCard', payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }): void
 }>()
 
 const editList = () => {
-  emit('editList', props.list)
+  emit('editList', props.list.id, { title: props.list.title }) // You might want to open a modal or prompt for new title here
 }
 
 const deleteList = () => {
   emit('deleteList', props.list.id)
+}
+
+const handleCreateCard = () => {
+  emit('createCard', props.list.id)
+}
+
+const handleEditCard = (cardId: string, updatedData: Partial<Card>) => {
+  emit('editCard', cardId, updatedData)
+}
+
+const handleDeleteCard = (cardId: string) => {
+  emit('deleteCard', cardId, props.list.id)
+}
+
+const handleReorderCards = (payload: { listId: string, cardIds: string[] }) => {
+  emit('reorderCards', payload)
+}
+
+const handleMoveCard = (payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }) => {
+  emit('moveCard', payload)
 }
 </script>
 
@@ -42,10 +64,12 @@ const deleteList = () => {
     <CardContainer
         :cards="list.cards"
         :listId="list.id"
-        @reorderCards="(payload) => $emit('reorderCards', payload)"
-        @moveCard="(payload) => $emit('moveCard', payload)"
+        @editCard="handleEditCard"
+        @deleteCard="handleDeleteCard"
+        @reorderCards="handleReorderCards"
+        @moveCard="handleMoveCard"
     />
-    <button @click="$emit('createCard', list.id)" class="w-full text-left p-2 text-gray-600 hover:bg-gray-200 rounded mt-2">
+    <button @click="handleCreateCard" class="w-full text-left p-2 text-gray-600 hover:bg-gray-200 rounded mt-2">
       + Add a card
     </button>
   </div>

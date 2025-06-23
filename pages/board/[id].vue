@@ -2,7 +2,12 @@
 import { ref, computed } from 'vue'
 import { Board, List, Card } from '@prisma/client'
 import ListContainer from '~/components/List/Container.vue'
+import { useBoardStore } from '~/stores/boardStore'
+import { useListStore } from '~/stores/listStore'
 // import { useToast } from '@nuxt/ui'
+
+const boardStore = useBoardStore()
+const listStore = useListStore()
 
 interface ListWithCards extends List {
   cards: Card[]
@@ -29,17 +34,36 @@ const editingCard = ref<Card | null>(null)
 
 const createList = async () => {
   const newListOrder = board.value?.lists.length || 0
-  await $fetch(`/api/lists`, {
-    method: 'POST',
-    body: {
-      title: newListTitle.value,
-      boardId,
-      order: newListOrder
+  try {
+    const newList = await $fetch(`/api/lists`, {
+      method: 'POST',
+      body: {
+        title: newListTitle.value,
+        boardId,
+        order: newListOrder
+      }
+    })
+
+    // Add the new list to the current board in the store
+    boardStore.addListToCurrentBoard(newList)
+
+    // Optionally, you can also update the listStore
+    await listStore.fetchLists(boardId)
+
+    // Update the local board data
+    if (board.value) {
+      if (!Array.isArray(board.value.lists)) {
+        board.value.lists = []
+      }
+      board.value.lists.push(newList)
     }
-  })
-  await refresh()
-  showCreateListModal.value = false
-  newListTitle.value = ''
+
+    showCreateListModal.value = false
+    newListTitle.value = ''
+  } catch (error) {
+    console.error('Error creating list:', error)
+    // Handle error (e.g., show error message to user)
+  }
 }
 
 const openCreateCardModal = (listId: string) => {

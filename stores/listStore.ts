@@ -43,8 +43,21 @@ export const useListStore = defineStore('list', {
                     method: 'POST',
                     body: listData
                 })
-                this.lists.push({ ...data, cards: [] })
-                return data
+
+                // Create a new ListWithCards object
+                const newList: ListWithCards = { ...data, cards: [] }
+
+                // Add the new list to the store
+                this.lists.push(newList)
+
+                // If we have a boardStore, update it as well
+                const boardStore = useBoardStore()
+                if (boardStore) {
+                    boardStore.addListToCurrentBoard(newList)
+                }
+
+                console.log('New list created:', newList)
+                return newList
             } catch (e: any) {
                 console.error('Error creating list:', e)
                 throw e
