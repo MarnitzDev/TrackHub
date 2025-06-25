@@ -17,6 +17,12 @@ export default defineNuxtConfig({
     'pinia-plugin-persistedstate/nuxt',
     '@sidebase/nuxt-auth'
   ],
+  vite: {
+    test: {
+      globals: true,
+      environment: 'jsdom',
+    }
+  },
   auth: {
     origin: process.env.ORIGIN || 'http://localhost:3000',
     enableGlobalAppMiddleware: true,

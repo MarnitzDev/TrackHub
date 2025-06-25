@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '#imports'
-import { useUserStore } from '~/stores/userStore'
-import { useBoardStore } from '~/stores/boardStore'
+import { useUserStore } from '../stores/userStore'
+import { useBoardStore } from '../stores/boardStore'
 
 // Stores and Auth
 // -----------------------------
@@ -112,6 +112,7 @@ onMounted(() => {
           <button
               @click="toggleUserMenu"
               class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition duration-150 ease-in-out"
+              data-testid="user-menu-button"
           >
             <img
                 v-if="avatarUrl"
@@ -138,6 +139,7 @@ onMounted(() => {
             <div
                 v-if="isUserMenuOpen"
                 class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
+                data-testid="user-menu-dropdown"
             >
               <template v-if="isAuthenticated">
                 <NuxtLink
