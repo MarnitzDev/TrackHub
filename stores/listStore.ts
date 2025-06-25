@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { List, Card } from '@prisma/client'
+import { useBoardStore } from './boardStore'
 
 interface ListWithCards extends List {
     cards: Card[]
@@ -130,7 +131,7 @@ export const useListStore = defineStore('list', {
          * @param listId - The ID of the list to add the card to.
          * @param card - The card to be added.
          */
-        async addCardToList(listId: string, card: Card) {
+        addCardToList(listId: string, card: Card) {
             const list = this.lists.find(l => l.id === listId)
             if (list) {
                 list.cards.push(card)
@@ -139,21 +140,19 @@ export const useListStore = defineStore('list', {
 
         /**
          * Removes a card from a specific list.
-         * @param listId - The ID of the list to remove the card from.
          * @param cardId - The ID of the card to be removed.
          */
-        async removeCardFromList(listId: string, cardId: string) {
-            const list = this.lists.find(l => l.id === listId)
-            if (list) {
+        removeCardFromList(cardId: string) {
+            this.lists.forEach(list => {
                 list.cards = list.cards.filter(c => c.id !== cardId)
-            }
+            })
         },
 
         /**
          * Moves a card from one list to another.
          * @param params - Object containing cardId, fromListId, toListId, and newIndex.
          */
-        async moveCard({ cardId, fromListId, toListId, newIndex }: { cardId: string, fromListId: string, toListId: string, newIndex: number }) {
+        moveCard({ cardId, fromListId, toListId, newIndex }: { cardId: string, fromListId: string, toListId: string, newIndex: number }) {
             const fromList = this.lists.find(l => l.id === fromListId)
             const toList = this.lists.find(l => l.id === toListId)
             if (fromList && toList) {
