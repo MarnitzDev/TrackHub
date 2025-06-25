@@ -38,7 +38,7 @@ const actions = ref([
 const confirmDelete = async () => {
   try {
     isDeleting.value = true
-    await boardStore.deleteBoard(props.board.id)
+    await boardStore.destroyBoard(props.board.id)
   } catch (error) {
     console.error('Failed to delete board:', error)
     // You might want to show an error message to the user here
