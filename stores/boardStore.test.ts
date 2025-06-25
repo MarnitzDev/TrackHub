@@ -64,7 +64,14 @@ describe('Board Store', () => {
 
     it('sets editing board', () => {
         const store = useBoardStore()
-        const board = { id: '1', title: 'Test Board' }
+        const board = {
+            id: '1',
+            title: 'Test Board',
+            description: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            userId: 'user1'
+        }
 
         store.setEditingBoard(board)
 
@@ -73,9 +80,24 @@ describe('Board Store', () => {
 
     it('adds list to current board', () => {
         const store = useBoardStore()
-        const board = { id: '1', title: 'Test Board', lists: [] }
+        const board = {
+            id: '1',
+            title: 'Test Board',
+            description: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            userId: 'user1',
+            lists: []
+        }
         store.boards = [board]
-        const newList = { id: '1', title: 'New List', boardId: '1' }
+        const newList = {
+            id: '1',
+            title: 'New List',
+            boardId: '1',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            order: 0
+        }
 
         store.addListToCurrentBoard(newList)
 
