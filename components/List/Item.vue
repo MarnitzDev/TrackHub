@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { List, Card } from '@prisma/client'
 import CardContainer from '../Card/Container.vue'
 
@@ -18,8 +19,19 @@ const emit = defineEmits<{
   (e: 'moveCard', payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }): void
 }>()
 
-const editList = () => {
-  emit('editList', props.list.id, { title: props.list.title }) // You might want to open a modal or prompt for new title here
+const isEditModalOpen = ref(false)
+const editedTitle = ref(props.list.title)
+
+const openEditModal = () => {
+  editedTitle.value = props.list.title
+  isEditModalOpen.value = true
+}
+
+const saveListTitle = () => {
+  if (editedTitle.value.trim() !== '') {
+    emit('editList', props.list.id, { title: editedTitle.value.trim() })
+    isEditModalOpen.value = false
+  }
 }
 
 const deleteList = () => {
@@ -52,7 +64,7 @@ const handleMoveCard = (payload: { cardId: string, fromListId: string, toListId:
     <div class="flex justify-between items-center mb-2">
       <h2 class="text-xl font-semibold">{{ list.title }}</h2>
       <div class="flex space-x-2">
-        <button @click="editList" class="text-blue-500 hover:text-blue-700">
+        <button @click="openEditModal" class="text-blue-500 hover:text-blue-700">
           <UIcon name="i-lucide-edit" class="w-4 h-4" />
         </button>
         <button @click="deleteList" class="text-red-500 hover:text-red-700">
@@ -72,5 +84,30 @@ const handleMoveCard = (payload: { cardId: string, fromListId: string, toListId:
     <button @click="handleCreateCard" class="w-full text-left p-2 text-gray-600 hover:bg-gray-200 rounded mt-2">
       + Add a card
     </button>
+
+    <!-- Edit List Modal -->
+    <UModal :open="isEditModalOpen">
+      <template #body>
+        <div class="p-4">
+          <h3 class="text-lg font-semibold mb-4">Edit List Title</h3>
+          <UInput
+              v-model="editedTitle"
+              placeholder="Enter list title"
+              class="mb-4"
+          />
+          <div class="flex justify-end space-x-2">
+            <UButton @click="isEditModalOpen = false">
+              Cancel
+            </UButton>
+            <UButton
+                color="primary"
+                @click="saveListTitle"
+            >
+              Save
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

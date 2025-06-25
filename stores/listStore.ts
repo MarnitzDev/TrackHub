@@ -63,22 +63,23 @@ export const useListStore = defineStore('list', {
                 throw e
             }
         },
-        async updateList(listData: Partial<List>) {
+
+        async editList(listId: string, updatedData: Partial<List>) {
             try {
-                const data = await $fetch(`/api/lists/${listData.id}`, {
+                const updatedList = await $fetch(`/api/lists/${listId}`, {
                     method: 'PUT',
-                    body: listData
+                    body: updatedData
                 })
-                const index = this.lists.findIndex(l => l.id === data.id)
+                const index = this.lists.findIndex(list => list.id === listId)
                 if (index !== -1) {
-                    this.lists[index] = { ...this.lists[index], ...data }
+                    this.lists[index] = { ...this.lists[index], ...updatedList }
                 }
-                return data
-            } catch (e: any) {
-                console.error('Error updating list:', e)
-                throw e
+            } catch (error) {
+                console.error('Error editing list:', error)
+                throw error
             }
         },
+
         async deleteList(listId: string) {
             try {
                 await $fetch(`/api/lists/${listId}`, {

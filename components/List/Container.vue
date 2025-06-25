@@ -57,9 +57,16 @@ const handleDeleteCard = (cardId: string, listId: string) => {
   emit('deleteCard', { cardId, listId })
 }
 
-const handleEditList = (listId: string, updatedData: Partial<List>) => {
+const handleEditList = async (listId: string, updatedData: Partial<List>) => {
   console.log('handleEditList called with listId:', listId, 'and updatedData:', updatedData);
-  emit('editList', { listId, updatedData })
+  try {
+    await listStore.editList(listId, updatedData)
+    console.log('List updated successfully')
+    // The UI will automatically update due to the reactive nature of the store
+  } catch (error) {
+    console.error('Error updating list:', error)
+    // Handle error (e.g., show an error message to the user)
+  }
 }
 
 const listToDelete = ref<string | null>(null)
