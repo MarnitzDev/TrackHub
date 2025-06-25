@@ -4,14 +4,17 @@ import { useAuth } from '#imports'
 import { useUserStore } from '~/stores/userStore'
 import { useBoardStore } from '~/stores/boardStore'
 
+// Stores and Auth
+// -----------------------------
 const { status, data: session, signIn, signOut } = useAuth()
 const userStore = useUserStore()
 const boardStore = useBoardStore()
 
+// Computed Properties
+// -----------------------------
 const isAuthenticated = computed(() => status.value === 'authenticated')
 const isUserGuest = computed(() => userStore.isGuest)
 const user = computed(() => session.value?.user || userStore.user)
-
 const userMetadata = computed(() => userStore.userMetadata)
 
 const displayName = computed(() => {
@@ -24,6 +27,8 @@ const avatarUrl = computed(() => {
   return user.value?.image || userMetadata.value?.avatar_url
 })
 
+// Navigation Items
+// -----------------------------
 const items = [
   { label: 'Dashboard', icon: 'i-lucide-home', to: '/' },
   { label: 'Board', icon: 'i-lucide-layout-dashboard', to: '/board' },
@@ -32,7 +37,13 @@ const items = [
   { label: 'Team', icon: 'i-lucide-users', to: '/team' }
 ]
 
+// State
+// -----------------------------
 const isUserMenuOpen = ref(false)
+
+//=============================================================================
+// User Menu Management
+//=============================================================================
 
 const toggleUserMenu = () => {
   isUserMenuOpen.value = !isUserMenuOpen.value
@@ -62,6 +73,8 @@ const handleSignIn = () => {
   isUserMenuOpen.value = false
 }
 
+// Lifecycle Hooks
+// -----------------------------
 onMounted(() => {
   if (status.value === 'authenticated' && session.value?.user) {
     userStore.setUser(session.value.user)

@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 
+// Props and Emits
+// -----------------------------
 const props = defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue'])
 
+// State
+// -----------------------------
 const QuillEditor = ref(null)
 const editorContent = ref(props.modelValue)
+
+//=============================================================================
+// Quill Editor Configuration
+//=============================================================================
 
 const quillOptions = {
   theme: 'snow',
@@ -28,6 +36,8 @@ const quillOptions = {
   }
 }
 
+// Lifecycle Hooks
+// -----------------------------
 onMounted(async () => {
   if (process.client) {
     const { QuillEditor: QE } = await import('@vueup/vue-quill')
@@ -35,11 +45,17 @@ onMounted(async () => {
   }
 })
 
+// Watchers
+// -----------------------------
 watch(() => props.modelValue, (newValue) => {
   if (newValue !== editorContent.value) {
     editorContent.value = newValue
   }
 })
+
+//=============================================================================
+// Editor Content Management
+//=============================================================================
 
 const updateContent = (content) => {
   editorContent.value = content

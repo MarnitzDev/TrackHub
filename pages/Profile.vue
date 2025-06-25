@@ -2,13 +2,21 @@
 import { useAuth } from '#imports'
 import { useUserStore } from '~/stores/userStore'
 
+// Stores and Auth
+// -----------------------------
 const { status, data: session } = useAuth()
 const userStore = useUserStore()
 
+// Computed Properties
+// -----------------------------
 const user = computed(() => session.value?.user || userStore.user)
 
 const isLoading = computed(() => status.value === 'loading')
 const isAuthenticated = computed(() => status.value === 'authenticated')
+
+//=============================================================================
+// Utility Functions
+//=============================================================================
 
 const formatDate = (date: string | undefined) => {
   if (!date) return 'N/A'

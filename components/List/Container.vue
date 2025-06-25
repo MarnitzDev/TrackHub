@@ -7,6 +7,8 @@ import { useListStore } from '~/stores/listStore'
 import ListItem from './Item.vue'
 import { useRoute } from 'vue-router'
 
+// Props and Emits
+// -----------------------------
 interface Props {
   boardId: string
 }
@@ -15,15 +17,20 @@ const props = defineProps<Props>()
 
 const emit = defineEmits(['createCard', 'editCard', 'deleteCard', 'editList', 'deleteList', 'reorderCards', 'moveCard'])
 
+// Store and Route
+// -----------------------------
 const listStore = useListStore()
 const route = useRoute()
 const { lists, loading, error } = storeToRefs(listStore)
 
-// Ensure lists is always an array
+// Computed Properties
+// -----------------------------
 const safeLists = computed(() => {
   return Array.isArray(lists.value) ? lists.value : []
 })
 
+// Lifecycle Hooks
+// -----------------------------
 onMounted(async () => {
   const boardId = route.params.id as string
   console.log("Component: Fetching lists for boardId:", boardId)
@@ -34,6 +41,10 @@ onMounted(async () => {
   }
 })
 
+//=============================================================================
+// List Management
+//=============================================================================
+
 const handleListChange = async (event: any) => {
   console.log('List change event:', event);
   if (event.moved) {
@@ -41,6 +52,22 @@ const handleListChange = async (event: any) => {
     await listStore.reorderLists(props.boardId, safeLists.value.map(list => list.id))
   }
 }
+
+const handleEditList = async (listId: string, updatedData: Partial<List>) => {
+  console.log('handleEditList called with listId:', listId, 'and updatedData:', updatedData);
+  try {
+    await listStore.editList(listId, updatedData)
+    console.log('List updated successfully')
+    // The UI will automatically update due to the reactive nature of the store
+  } catch (error) {
+    console.error('Error updating list:', error)
+    // Handle error (e.g., show an error message to the user)
+  }
+}
+
+//=============================================================================
+// Card Management
+//=============================================================================
 
 const handleCreateCard = (listId: string, cardData: Partial<Card>) => {
   console.log('handleCreateCard called with listId:', listId, 'and cardData:', cardData);
@@ -57,17 +84,19 @@ const handleDeleteCard = (cardId: string, listId: string) => {
   emit('deleteCard', { cardId, listId })
 }
 
-const handleEditList = async (listId: string, updatedData: Partial<List>) => {
-  console.log('handleEditList called with listId:', listId, 'and updatedData:', updatedData);
-  try {
-    await listStore.editList(listId, updatedData)
-    console.log('List updated successfully')
-    // The UI will automatically update due to the reactive nature of the store
-  } catch (error) {
-    console.error('Error updating list:', error)
-    // Handle error (e.g., show an error message to the user)
-  }
+const handleReorderCards = (listId: string, cardIds: string[]) => {
+  console.log('handleReorderCards called with listId:', listId, 'and cardIds:', cardIds);
+  emit('reorderCards', { listId, cardIds })
 }
+
+const handleMoveCard = (payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }) => {
+  console.log('handleMoveCard called with payload:', payload);
+  emit('moveCard', payload)
+}
+
+//=============================================================================
+// List Deletion
+//=============================================================================
 
 const listToDelete = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
@@ -97,16 +126,6 @@ const handleDeleteList = async () => {
 const cancelDelete = () => {
   showDeleteConfirm.value = false
   listToDelete.value = null
-}
-
-const handleReorderCards = (listId: string, cardIds: string[]) => {
-  console.log('handleReorderCards called with listId:', listId, 'and cardIds:', cardIds);
-  emit('reorderCards', { listId, cardIds })
-}
-
-const handleMoveCard = (payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }) => {
-  console.log('handleMoveCard called with payload:', payload);
-  emit('moveCard', payload)
 }
 </script>
 

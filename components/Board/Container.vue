@@ -4,13 +4,19 @@ import { storeToRefs } from 'pinia'
 import { useBoardStore } from '~/stores/boardStore'
 import BoardCard from '~/components/Board/Item.vue'
 
+// Store and Shared State
+// -----------------------------
 const boardStore = useBoardStore()
 const { boards, loading, error, editingBoard } = storeToRefs(boardStore)
 
-const showCreateBoardModal = ref(false)
-const showEditBoardModal = computed(() => !!editingBoard.value)
 const newBoardTitle = ref('')
 const newBoardDescription = ref('')
+
+//=============================================================================
+// Create Board Logic
+//=============================================================================
+
+const showCreateBoardModal = ref(false)
 
 const handleCreateBoard = async () => {
   if (!newBoardTitle.value.trim()) return
@@ -27,6 +33,18 @@ const handleCreateBoard = async () => {
     // toast.error('Failed to create board. Please try again.')
   }
 }
+
+const closeCreateModal = () => {
+  showCreateBoardModal.value = false
+  newBoardTitle.value = ''
+  newBoardDescription.value = ''
+}
+
+//=============================================================================
+// Edit Board Logic
+//=============================================================================
+
+const showEditBoardModal = computed(() => !!editingBoard.value)
 
 const handleUpdateBoard = async () => {
   if (!editingBoard.value || !newBoardTitle.value.trim()) return
@@ -45,18 +63,14 @@ const handleUpdateBoard = async () => {
   }
 }
 
-const closeCreateModal = () => {
-  showCreateBoardModal.value = false
-  newBoardTitle.value = ''
-  newBoardDescription.value = ''
-}
-
 const closeEditModal = () => {
   boardStore.setEditingBoard(null)
   newBoardTitle.value = ''
   newBoardDescription.value = ''
 }
 
+// Lifecycle Hooks
+// -----------------------------
 onMounted(() => boardStore.fetchBoards())
 </script>
 

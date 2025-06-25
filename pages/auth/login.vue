@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { useAuth } from '#imports'
 
+// Page Configuration
+// -----------------------------
 definePageMeta({
   layout: 'auth'
 })
 
+// Auth Hooks
+// -----------------------------
 const { signIn } = useAuth()
+
+//=============================================================================
+// Authentication Methods
+//=============================================================================
 
 const handleGoogleSignIn = () => {
   signIn('google')

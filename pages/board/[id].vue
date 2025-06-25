@@ -6,9 +6,13 @@ import { useBoardStore } from '~/stores/boardStore'
 import { useListStore } from '~/stores/listStore'
 // import { useToast } from '@nuxt/ui'
 
+// Stores
+// -----------------------------
 const boardStore = useBoardStore()
 const listStore = useListStore()
 
+// Types
+// -----------------------------
 interface ListWithCards extends List {
   cards: Card[]
 }
@@ -17,11 +21,15 @@ interface BoardWithLists extends Board {
   lists: ListWithCards[]
 }
 
+// Route and Data Fetching
+// -----------------------------
 const route = useRoute()
 const boardId = route.params.id as string
 
 const { data: board, refresh } = await useFetch<BoardWithLists>(`/api/boards/${boardId}`)
 
+// State
+// -----------------------------
 const showCreateListModal = ref(false)
 const newListTitle = ref('')
 
@@ -31,6 +39,10 @@ const newCardDescription = ref('')
 const activeListId = ref<string | null>(null)
 
 const editingCard = ref<Card | null>(null)
+
+//=============================================================================
+// List Management
+//=============================================================================
 
 const createList = async () => {
   const newListOrder = board.value?.lists.length || 0
@@ -65,6 +77,25 @@ const createList = async () => {
     // Handle error (e.g., show error message to user)
   }
 }
+
+const reorderLists = async (newOrder: string[]) => {
+  console.log('Reordering lists:', newOrder);
+  try {
+    await $fetch(`/api/boards/${boardId}/reorder-lists`, {
+      method: 'PUT',
+      body: { listIds: newOrder }
+    });
+    console.log('Lists reordered successfully');
+    await refresh();
+  } catch (error) {
+    console.error('Error reordering lists:', error);
+    // Handle error (e.g., show toast notification)
+  }
+}
+
+//=============================================================================
+// Card Management
+//=============================================================================
 
 const openCreateCardModal = (listId: string) => {
   activeListId.value = listId
@@ -276,22 +307,6 @@ const updateCard = async () => {
   newCardTitle.value = ''
   newCardDescription.value = ''
 }
-
-const reorderLists = async (newOrder: string[]) => {
-  console.log('Reordering lists:', newOrder);
-  try {
-    await $fetch(`/api/boards/${boardId}/reorder-lists`, {
-      method: 'PUT',
-      body: { listIds: newOrder }
-    });
-    console.log('Lists reordered successfully');
-    await refresh();
-  } catch (error) {
-    console.error('Error reordering lists:', error);
-    // Handle error (e.g., show toast notification)
-  }
-}
-
 </script>
 
 <template>

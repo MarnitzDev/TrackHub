@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { List, Card } from '@prisma/client'
 import CardContainer from '../Card/Container.vue'
 
+// Props and Emits
+// -----------------------------
 interface Props {
   list: List & { cards: Card[] }
 }
@@ -19,8 +21,14 @@ const emit = defineEmits<{
   (e: 'moveCard', payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }): void
 }>()
 
+// State
+// -----------------------------
 const isEditModalOpen = ref(false)
 const editedTitle = ref(props.list.title)
+
+//=============================================================================
+// List Management
+//=============================================================================
 
 const openEditModal = () => {
   editedTitle.value = props.list.title
@@ -37,6 +45,10 @@ const saveListTitle = () => {
 const deleteList = () => {
   emit('deleteList', props.list.id)
 }
+
+//=============================================================================
+// Card Management
+//=============================================================================
 
 const handleCreateCard = () => {
   emit('createCard', props.list.id)

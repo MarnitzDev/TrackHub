@@ -3,6 +3,8 @@ import { ref, watch } from 'vue'
 import CardEditor from '~/components/Card/CardEditor.vue'
 import { Card } from '@prisma/client'
 
+// Props and Emits
+// -----------------------------
 interface Props {
   isOpen: boolean
   card: Card | null
@@ -12,17 +14,29 @@ const props = defineProps<Props>()
 
 const emit = defineEmits(['update:isOpen', 'save', 'delete'])
 
+// State
+// -----------------------------
 const localCard = ref<Card | null>(null)
 
+// Watchers
+// -----------------------------
 watch(() => props.card, (newCard) => {
   if (newCard) {
     localCard.value = { ...newCard }
   }
 }, { immediate: true })
 
+//=============================================================================
+// Modal Management
+//=============================================================================
+
 const closeModal = () => {
   emit('update:isOpen', false)
 }
+
+//=============================================================================
+// Card Operations
+//=============================================================================
 
 const saveChanges = () => {
   if (localCard.value) {

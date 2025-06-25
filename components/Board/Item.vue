@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { Board } from '@prisma/client'
 import { useBoardStore } from '~/stores/boardStore'
 
+// Props and Store
+// -----------------------------
 interface Props {
   board: Board;
 }
@@ -10,8 +12,14 @@ interface Props {
 const props = defineProps<Props>()
 const boardStore = useBoardStore()
 
+// State
+// -----------------------------
 const isDeleting = ref(false)
 const showDeleteConfirm = ref(false)
+
+//=============================================================================
+// Board Actions
+//=============================================================================
 
 const actions = ref([
   [
@@ -34,6 +42,10 @@ const actions = ref([
     },
   ],
 ])
+
+//=============================================================================
+// Delete Board Logic
+//=============================================================================
 
 const confirmDelete = async () => {
   try {

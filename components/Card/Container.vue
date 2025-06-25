@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import draggable from 'vuedraggable'
@@ -6,6 +5,8 @@ import { Card } from '@prisma/client'
 import CardItem from './Item.vue'
 import CardModal from './CardModal.vue'
 
+// Props and Emits
+// -----------------------------
 interface Props {
   cards: Card[]
   listId: string
@@ -20,13 +21,21 @@ const emit = defineEmits<{
   (e: 'deleteCard', cardId: string): void
 }>()
 
+// State
+// -----------------------------
 const localCards = ref<Card[]>(props.cards)
 const isCardModalOpen = ref(false)
 const selectedCard = ref<Card | null>(null)
 
+// Watchers
+// -----------------------------
 watch(() => props.cards, (newCards) => {
   localCards.value = newCards
 }, { deep: true })
+
+//=============================================================================
+// Card Management
+//=============================================================================
 
 const handleCardChange = (event: any) => {
   if (event.added) {
@@ -57,6 +66,10 @@ const editCard = (card: Card) => {
 const deleteCard = (cardId: string) => {
   emit('deleteCard', cardId)
 }
+
+//=============================================================================
+// Modal Interactions
+//=============================================================================
 
 const handleCardSave = (updatedCard: Card) => {
   const index = localCards.value.findIndex(card => card.id === updatedCard.id)
