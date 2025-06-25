@@ -125,7 +125,7 @@ onMounted(() => {
                 name="i-lucide-user"
                 class="h-8 w-8 p-1 bg-gray-200 rounded-full"
             />
-            <span class="hidden md:inline">{{ displayName }}</span>
+            <span class="hidden md:inline" data-testid="user-display-name">{{ displayName }}</span>
             <UIcon name="i-lucide-chevron-down" class="w-4 h-4 text-gray-500" />
           </button>
           <transition

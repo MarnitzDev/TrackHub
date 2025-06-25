@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref, defineComponent, h } from 'vue'
-import { createPinia, setActivePinia } from 'pinia'
-import AppHeader from '../components/AppHeader.vue'
+import { createTestingPinia } from '@pinia/testing'
+import _sut from '~/components/AppHeader.vue'
 
 // Mock components
 const mockNuxtLink = defineComponent({
@@ -31,58 +31,45 @@ vi.mock('#imports', () => ({
     })
 }))
 
-// Mock the store modules
-vi.mock('~/stores/userStore', () => ({
-    useUserStore: () => ({
-        isGuest: ref(true),
-        user: ref(null),
-        userMetadata: ref(null),
-        $reset: vi.fn()
-    })
-}))
-
-vi.mock('~/stores/boardStore', () => ({
-    useBoardStore: () => ({
-        $reset: vi.fn()
-    })
-}))
-
 describe('AppHeader', () => {
-    beforeEach(() => {
-        setActivePinia(createPinia())
-    })
-
-    it('renders the logo', () => {
-        const wrapper = mount(AppHeader, {
+    const mountComponent = (options = {}) => {
+        return mount(_sut, {
             global: {
                 components: {
                     NuxtLink: mockNuxtLink,
                     UIcon: mockUIcon
-                }
+                },
+                plugins: [
+                    createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            user: {
+                                isGuest: true,
+                                user: null,
+                                userMetadata: null
+                            },
+                            board: {}
+                        },
+                        ...options
+                    })
+                ]
             }
         })
+    }
+
+    it('renders the logo', () => {
+        const wrapper = mountComponent()
         expect(wrapper.find('.font-bold.text-xl').text()).toBe('TrackHub')
     })
 
     it('renders navigation items', () => {
-        const wrapper = mount(AppHeader, {
-            global: {
-                components: {
-                    NuxtLink: mockNuxtLink,
-                    UIcon: mockUIcon
-                }
-            }
-        })
+        const wrapper = mountComponent()
         const navItems = wrapper.findAll('nav a')
         expect(navItems.length).toBeGreaterThan(0)
     })
 
     it('renders correct navigation items', () => {
-        const wrapper = mount(AppHeader, {
-            global: {
-                components: { NuxtLink: mockNuxtLink, UIcon: mockUIcon },
-            },
-        })
+        const wrapper = mountComponent()
         const navItems = wrapper.findAll('nav a')
         const expectedItems = [
             { label: 'Dashboard', to: '/' },
@@ -99,46 +86,27 @@ describe('AppHeader', () => {
     })
 
     // it('displays user name when authenticated', async () => {
-    //     const wrapper = mount(AppHeader, {
-    //         global: {
-    //             components: { NuxtLink: mockNuxtLink, UIcon: mockUIcon },
-    //             mocks: {
-    //                 useAuth: () => ({
-    //                     status: ref('authenticated'),
-    //                     data: ref({ user: { name: 'John Doe' } }),
-    //                 }),
-    //             },
-    //         },
+    //     const wrapper = mountComponent({
+    //         initialState: {
+    //             user: {
+    //                 isGuest: false,
+    //                 user: { name: 'John Doe' },
+    //                 userMetadata: null
+    //             }
+    //         }
     //     })
     //     await wrapper.vm.$nextTick()
     //     expect(wrapper.find('.hidden.md\\:inline').text()).toBe('John Doe')
     // })
-    //
+
     // it('displays "Guest User" for guest users', async () => {
-    //     const wrapper = mount(AppHeader, {
-    //         global: {
-    //             components: { NuxtLink: mockNuxtLink, UIcon: mockUIcon },
-    //             mocks: {
-    //                 useAuth: () => ({
-    //                     status: ref('unauthenticated'),
-    //                     data: ref(null),
-    //                 }),
-    //                 useUserStore: () => ({
-    //                     isGuest: ref(true),
-    //                 }),
-    //             },
-    //         },
-    //     })
+    //     const wrapper = mountComponent()
     //     await wrapper.vm.$nextTick()
-    //     expect(wrapper.find('.hidden.md\\:inline').text()).toBe('Guest User')
+    //     expect(wrapper.find('[data-testid="user-menu-button"]').text()).toContain('Guest User')
     // })
 
     it('toggles user menu on button click', async () => {
-        const wrapper = mount(AppHeader, {
-            global: {
-                components: { NuxtLink: mockNuxtLink, UIcon: mockUIcon },
-            },
-        })
+        const wrapper = mountComponent()
         const button = wrapper.find('[data-testid="user-menu-button"]')
         expect(wrapper.find('[data-testid="user-menu-dropdown"]').exists()).toBe(false)
         await button.trigger('click')
@@ -147,23 +115,16 @@ describe('AppHeader', () => {
 
     // it('calls signOut when sign out button is clicked', async () => {
     //     const mockSignOut = vi.fn()
-    //     const wrapper = mount(AppHeader, {
-    //         global: {
-    //             components: { NuxtLink: mockNuxtLink, UIcon: mockUIcon },
-    //             mocks: {
-    //                 useAuth: () => ({
-    //                     status: ref('authenticated'),
-    //                     data: ref({ user: { name: 'John Doe' } }),
-    //                     signOut: mockSignOut,
-    //                 }),
-    //             },
-    //         },
+    //     vi.mocked(useAuth).mockReturnValue({
+    //         status: ref('authenticated'),
+    //         data: ref({ user: { name: 'John Doe' } }),
+    //         signOut: mockSignOut,
+    //         signIn: vi.fn()
     //     })
-    //     await wrapper.find('button').trigger('click') // Open user menu
-    //     await wrapper.find('button.block.w-full').trigger('click') // Click sign out button
+    //
+    //     const wrapper = mountComponent()
+    //     await wrapper.find('[data-testid="user-menu-button"]').trigger('click') // Open user menu
+    //     await wrapper.find('[data-testid="sign-out-button"]').trigger('click') // Click sign out button
     //     expect(mockSignOut).toHaveBeenCalled()
     // })
-
-
-
 })
