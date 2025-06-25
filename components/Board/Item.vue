@@ -26,6 +26,7 @@ const actions = ref([
     {
       label: "Edit",
       icon: "i-lucide-pencil",
+      key: `edit-board-button-${props.board.id}`,
       onSelect: () => {
         console.log('Edit board:', props.board);
         boardStore.setEditingBoard(props.board)
@@ -65,6 +66,7 @@ const confirmDelete = async () => {
   <NuxtLink
       :to="`/board/${board.id}`"
       class="block shadow dark:bg-gray-800 rounded-lg overflow-hidden relative hover:shadow-lg transition-shadow duration-300"
+      data-testid="board-card"
   >
     <div class="relative h-36">
       <img

@@ -92,6 +92,7 @@ onMounted(() => boardStore.fetchBoards())
       <button
           @click="showCreateBoardModal = true"
           class="mt-4 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-lg font-semibold"
+          data-testid="create-board-button"
       >
         Create Your First Board
       </button>
@@ -115,7 +116,7 @@ onMounted(() => boardStore.fetchBoards())
     </button>
 
     <!-- Create Board Modal -->
-    <UModal :open="showCreateBoardModal" @close="closeCreateModal">
+    <UModal :open="showCreateBoardModal" @close="closeCreateModal" data-testid="create-board-modal">
       <template #content>
         <div class="p-6">
           <h2 class="text-2xl font-bold mb-6">Create New Board</h2>
