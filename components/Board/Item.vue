@@ -50,8 +50,10 @@ const confirmDelete = async () => {
 </script>
 
 <template>
-  <div class="shadow dark:bg-gray-800 rounded-lg overflow-hidden relative">
-    <!-- Board content -->
+  <NuxtLink
+      :to="`/board/${board.id}`"
+      class="block shadow dark:bg-gray-800 rounded-lg overflow-hidden relative hover:shadow-lg transition-shadow duration-300"
+  >
     <div class="relative h-36">
       <img
           v-if="board.coverImage"
@@ -63,30 +65,32 @@ const confirmDelete = async () => {
           class="absolute inset-0 bg-gradient-to-b from-black/70 to-transparent"
       ></div>
       <div class="absolute inset-x-0 top-0 p-4 flex justify-between items-center">
-        <NuxtLink
-            :to="`/board/${board.id}`"
-            class="font-semibold text-white text-lg hover:underline"
-        >
+        <span class="font-semibold text-white text-lg">
           {{ board.title }}
-        </NuxtLink>
-        <UDropdownMenu :items="actions" :content="{ align: 'start' }" :ui="{ content: 'w-48' }">
-          <UButton color="neutral" variant="subtle" icon="i-lucide-settings" />
+        </span>
+        <UDropdownMenu
+            :items="actions"
+            :content="{ align: 'start' }"
+            :ui="{ content: 'w-48' }"
+            @click.stop
+        >
+          <UButton color="neutral" variant="subtle" icon="i-lucide-settings" @click.stop />
         </UDropdownMenu>
       </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <UModal :open="showDeleteConfirm">
+    <UModal :open="showDeleteConfirm" @click.stop>
       <template #content>
         <div class="p-4">
           <h3 class="text-lg font-semibold mb-2">Confirm Delete</h3>
           <p>Are you sure you want to delete this board?</p>
           <div class="mt-4 flex justify-end gap-2">
-            <UButton @click="showDeleteConfirm = false">Cancel</UButton>
-            <UButton color="red" :loading="isDeleting" @click="confirmDelete">Delete</UButton>
+            <UButton @click.stop="showDeleteConfirm = false">Cancel</UButton>
+            <UButton color="red" :loading="isDeleting" @click.stop="confirmDelete">Delete</UButton>
           </div>
         </div>
       </template>
     </UModal>
-  </div>
+  </NuxtLink>
 </template>
