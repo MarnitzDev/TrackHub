@@ -62,23 +62,34 @@ const handleEditList = (listId: string, updatedData: Partial<List>) => {
   emit('editList', { listId, updatedData })
 }
 
-// const handleDeleteList = (listId: string) => {
-//   console.log('handleDeleteList called with listId:', listId);
-//   emit('deleteList', { listId })
-// }
+const listToDelete = ref<string | null>(null)
+const showDeleteConfirm = ref(false)
 
-const handleDeleteList = async (listId: string) => {
-  console.log('handleDeleteList called with listId:', listId);
+const handleDeleteListRequest = (listId: string) => {
+  listToDelete.value = listId
+  showDeleteConfirm.value = true
+}
+
+const handleDeleteList = async () => {
+  if (!listToDelete.value) return
+
+  console.log('handleDeleteList called with listId:', listToDelete.value)
   try {
-    await listStore.deleteList(listId)
+    await listStore.deleteList(listToDelete.value)
     console.log('List deleted successfully')
-    // Optionally, you can emit an event to notify the parent component
-    emit('listDeleted', listId)
+    emit('listDeleted', listToDelete.value)
   } catch (error) {
     console.error('Error deleting list:', error)
-    // Optionally, you can emit an error event or handle the error in some way
-    emit('listDeleteError', { listId, error })
+    emit('listDeleteError', { listId: listToDelete.value, error })
+  } finally {
+    showDeleteConfirm.value = false
+    listToDelete.value = null
   }
+}
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false
+  listToDelete.value = null
 }
 
 const handleReorderCards = (listId: string, cardIds: string[]) => {
@@ -112,12 +123,25 @@ const handleMoveCard = (payload: { cardId: string, fromListId: string, toListId:
               @editCard="handleEditCard"
               @deleteCard="handleDeleteCard"
               @editList="handleEditList"
-              @deleteList="handleDeleteList"
+              @deleteList="handleDeleteListRequest"
               @reorderCards="handleReorderCards"
               @moveCard="handleMoveCard"
           />
         </template>
       </draggable>
     </template>
+
+    <UModal :open="showDeleteConfirm" @close="cancelDelete">
+      <template #content>
+        <div class="p-4">
+          <h3 class="text-lg font-semibold mb-2">Confirm Delete</h3>
+          <p>Are you sure you want to delete this list? This action cannot be undone.</p>
+          <div class="mt-4 flex justify-end space-x-2">
+            <UButton @click="cancelDelete">Cancel</UButton>
+            <UButton color="red" @click="handleDeleteList">Delete</UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
