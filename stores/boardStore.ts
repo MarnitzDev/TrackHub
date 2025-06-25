@@ -107,20 +107,20 @@ export const useBoardStore = defineStore('board', {
          */
         addListToCurrentBoard(newList: List) {
             console.log('boardStore: addListToCurrentBoard', newList)
-            const currentBoard = this.boards.find(board => board.id === newList.boardId)
-            if (currentBoard) {
+            const boardIndex = this.boards.findIndex(board => board.id === newList.boardId)
+            if (boardIndex !== -1) {
+                const currentBoard = this.boards[boardIndex]
                 if (!Array.isArray(currentBoard.lists)) {
                     currentBoard.lists = []
                 }
                 currentBoard.lists.push(newList)
-                // Update the board in the boards array
-                const boardIndex = this.boards.findIndex(board => board.id === newList.boardId)
-                if (boardIndex !== -1) {
-                    this.boards[boardIndex] = { ...currentBoard }
-                }
+                // Update the board in the boards array and trigger reactivity
+                this.boards[boardIndex] = { ...currentBoard }
+                // Force reactivity on the entire boards array
+                this.boards = [...this.boards]
             } else {
                 console.error('Current board not found when adding new list')
             }
-        },
+        }
     },
 })
