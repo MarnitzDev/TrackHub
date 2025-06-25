@@ -8,7 +8,12 @@ export const useBoardStore = defineStore('board', {
         error: null as string | null,
         editingBoard: null as Board | null,
     }),
+
     actions: {
+        /**
+         * Fetches all boards from the API and updates the store.
+         * Sets loading state and handles errors.
+         */
         async fetchBoards() {
             console.log('boardStore: fetchBoards')
             this.loading = true
@@ -24,6 +29,11 @@ export const useBoardStore = defineStore('board', {
             }
         },
 
+        /**
+         * Creates a new board with the given data.
+         * @param boardData - The data for the new board.
+         * @returns The created board data.
+         */
         async createBoard(boardData: { title: string, description?: string }) {
             console.log('boardStore: createBoard')
             try {
@@ -39,11 +49,19 @@ export const useBoardStore = defineStore('board', {
             }
         },
 
+        /**
+         * Sets the board to be edited.
+         * @param board - The board to be edited or null to clear.
+         */
         setEditingBoard(board: Board | null) {
             console.log('boardStore: setEditingBoard', board)
             this.editingBoard = board ? { ...board } : null
         },
 
+        /**
+         * Updates an existing board with the given data.
+         * @param boardData - The updated data for the board.
+         */
         async updateBoard(boardData: { id: string, title: string, description?: string }) {
             console.log('boardStore: updateBoard', boardData)
             this.loading = true
@@ -64,6 +82,11 @@ export const useBoardStore = defineStore('board', {
             }
         },
 
+        /**
+         * Deletes a board by its ID.
+         * @param id - The ID of the board to delete.
+         * @returns A boolean indicating whether the deletion was successful.
+         */
         async destroyBoard(id: string): Promise<boolean> {
             console.log('boardStore: destroyBoard')
             try {
@@ -78,6 +101,10 @@ export const useBoardStore = defineStore('board', {
             }
         },
 
+        /**
+         * Adds a new list to the current board.
+         * @param newList - The new list to be added.
+         */
         addListToCurrentBoard(newList: List) {
             console.log('boardStore: addListToCurrentBoard', newList)
             const currentBoard = this.boards.find(board => board.id === newList.boardId)

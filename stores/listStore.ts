@@ -12,6 +12,10 @@ export const useListStore = defineStore('list', {
         error: null as string | null,
     }),
     actions: {
+        /**
+         * Fetches lists for a specific board.
+         * @param boardId - The ID of the board to fetch lists for.
+         */
         async fetchLists(boardId: string) {
             console.log("listStore: fetchLists, boardId:", boardId);
             if (!boardId) {
@@ -37,6 +41,12 @@ export const useListStore = defineStore('list', {
                 this.loading = false
             }
         },
+
+        /**
+         * Creates a new list.
+         * @param listData - Partial data for the new list.
+         * @returns The newly created list with cards.
+         */
         async createList(listData: Partial<List>) {
             try {
                 const data = await $fetch('/api/lists', {
@@ -44,13 +54,9 @@ export const useListStore = defineStore('list', {
                     body: listData
                 })
 
-                // Create a new ListWithCards object
                 const newList: ListWithCards = { ...data, cards: [] }
-
-                // Add the new list to the store
                 this.lists.push(newList)
 
-                // If we have a boardStore, update it as well
                 const boardStore = useBoardStore()
                 if (boardStore) {
                     boardStore.addListToCurrentBoard(newList)
@@ -64,6 +70,11 @@ export const useListStore = defineStore('list', {
             }
         },
 
+        /**
+         * Edits an existing list.
+         * @param listId - The ID of the list to edit.
+         * @param updatedData - The updated data for the list.
+         */
         async editList(listId: string, updatedData: Partial<List>) {
             try {
                 const updatedList = await $fetch(`/api/lists/${listId}`, {
@@ -80,6 +91,10 @@ export const useListStore = defineStore('list', {
             }
         },
 
+        /**
+         * Deletes a list.
+         * @param listId - The ID of the list to delete.
+         */
         async deleteList(listId: string) {
             try {
                 await $fetch(`/api/lists/${listId}`, {
@@ -91,31 +106,53 @@ export const useListStore = defineStore('list', {
                 throw e
             }
         },
+
+        /**
+         * Reorders lists within a board.
+         * @param boardId - The ID of the board containing the lists.
+         * @param listIds - An array of list IDs in their new order.
+         */
         async reorderLists(boardId: string, listIds: string[]) {
             try {
                 await $fetch(`/api/boards/${boardId}/reorder-lists`, {
                     method: 'PUT',
                     body: { listIds }
                 })
-                // Update local state
                 this.lists = listIds.map(id => this.lists.find(l => l.id === id)!).filter(Boolean)
             } catch (e: any) {
                 console.error('Error reordering lists:', e)
                 throw e
             }
         },
+
+        /**
+         * Adds a card to a specific list.
+         * @param listId - The ID of the list to add the card to.
+         * @param card - The card to be added.
+         */
         async addCardToList(listId: string, card: Card) {
             const list = this.lists.find(l => l.id === listId)
             if (list) {
                 list.cards.push(card)
             }
         },
+
+        /**
+         * Removes a card from a specific list.
+         * @param listId - The ID of the list to remove the card from.
+         * @param cardId - The ID of the card to be removed.
+         */
         async removeCardFromList(listId: string, cardId: string) {
             const list = this.lists.find(l => l.id === listId)
             if (list) {
                 list.cards = list.cards.filter(c => c.id !== cardId)
             }
         },
+
+        /**
+         * Moves a card from one list to another.
+         * @param params - Object containing cardId, fromListId, toListId, and newIndex.
+         */
         async moveCard({ cardId, fromListId, toListId, newIndex }: { cardId: string, fromListId: string, toListId: string, newIndex: number }) {
             const fromList = this.lists.find(l => l.id === fromListId)
             const toList = this.lists.find(l => l.id === toListId)
