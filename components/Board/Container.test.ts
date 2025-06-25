@@ -94,20 +94,30 @@ describe('BoardContainer', () => {
     it('creates a new board', async () => {
         const store = useBoardStore()
         store.createBoard = vi.fn().mockResolvedValue({})
+
         // Simulate opening the modal
         await wrapper.find('[data-testid="create-board-button"]').trigger('click')
-        // Set the reactive values directly
-        wrapper.vm.newBoardTitle = 'New Board'
-        wrapper.vm.newBoardDescription = 'New Description'
-        // Call handleCreateBoard
-        await wrapper.vm.handleCreateBoard()
+        await wrapper.vm.$nextTick()
+
+        // Find the CreateBoardModal component
+        const createBoardModal = wrapper.findComponent({ name: 'CreateBoardModal' })
+        expect(createBoardModal.exists()).toBe(true)
+
+        // Simulate creating a board by emitting the 'create' event from the modal
+        await createBoardModal.vm.$emit('create', {
+            title: 'New Board',
+            description: 'New Description'
+        })
+
         // Wait for any asynchronous operations to complete
         await wrapper.vm.$nextTick()
+
         // Check if the store method was called with the correct arguments
         expect(store.createBoard).toHaveBeenCalledWith({
             title: 'New Board',
             description: 'New Description'
         })
+
         // Check if the modal is closed after creation
         expect(wrapper.vm.showCreateBoardModal).toBe(false)
     })
