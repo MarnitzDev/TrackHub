@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import path from 'path'
 
 const prisma = new PrismaClient()
 
@@ -23,12 +24,15 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
+        // Extract only the filename if backgroundImage is provided
+        const backgroundImageName = body.backgroundImage ? path.basename(body.backgroundImage) : undefined
+
         const updatedBoard = await prisma.board.update({
             where: { id },
             data: {
                 ...(body.title !== undefined && { title: body.title }),
                 ...(body.description !== undefined && { description: body.description }),
-                ...(body.backgroundImage !== undefined && { backgroundImage: body.backgroundImage }),
+                ...(backgroundImageName !== undefined && { backgroundImage: backgroundImageName }),
             },
         })
 
