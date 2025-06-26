@@ -40,6 +40,13 @@ const activeListId = ref<string | null>(null)
 
 const editingCard = ref<Card | null>(null)
 
+const backgroundImageUrl = computed(() => {
+  if (board.value?.backgroundImage) {
+    return `/images/board-backgrounds/${board.value.backgroundImage}`
+  }
+  return null
+})
+
 //=============================================================================
 // List Management
 //=============================================================================
@@ -310,9 +317,15 @@ const updateCard = async () => {
 </script>
 
 <template>
-  <div v-if="board" class="mx-auto px-4 py-8">
-    <h1>BOARD</h1>
-    <h1 class="text-3xl font-bold mb-6">{{ board.title }}</h1>
+  <div
+      v-if="board"
+      class="min-h-screen px-4 py-8"
+      :style="backgroundImageUrl ? `background-image: url(${backgroundImageUrl}); background-size: cover; background-position: center; background-attachment: fixed;` : ''"
+  >
+
+    <div class="bg-white bg-opacity-90 rounded-lg p-6 mb-6">
+      <h1 class="text-3xl font-bold">{{ board.title }}</h1>
+    </div>
 
     <ListContainer
         v-if="board.lists"
