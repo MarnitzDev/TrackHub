@@ -24,11 +24,21 @@ export const useBoardStore = defineStore('board', {
             this.loading = true
             this.error = null
             try {
-                const data = await $fetch('/api/boards')
-                this.boards = data
+                const data: BoardWithLists[] = await $fetch('/api/boards')
+                this.boards = data.map(board => ({
+                    ...board,
+                    backgroundImageUrl: board.backgroundImage
+                        ? `/images/board-backgrounds/${board.backgroundImage}`
+                        : '/images/board-backgrounds/default.png'
+                }))
             } catch (e: any) {
                 console.error('Error fetching boards:', e)
-                this.error = e.message
+                if (e.statusCode === 400 && e.statusMessage === 'Board ID is required') {
+                    // This error suggests there are no boards, so we'll set an empty array
+                    this.boards = []
+                } else {
+                    this.error = e.message
+                }
             } finally {
                 this.loading = false
             }
@@ -41,16 +51,21 @@ export const useBoardStore = defineStore('board', {
          */
         async createBoard(boardData: { title: string, description?: string, backgroundImage?: string }) {
             console.log('boardStore: createBoard')
+            this.loading = true
+            this.error = null
             try {
-                const data = await $fetch('/api/boards', {
+                const newBoard = await $fetch('/api/boards', {
                     method: 'POST',
                     body: boardData
                 })
-                await this.fetchBoards()
-                return data
+                this.boards.push(newBoard)
+                return newBoard
             } catch (e: any) {
                 console.error('Error creating board:', e)
+                this.error = e.message
                 throw e
+            } finally {
+                this.loading = false
             }
         },
 

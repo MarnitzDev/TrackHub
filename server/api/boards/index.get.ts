@@ -5,48 +5,58 @@ const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
     try {
+        // Check user authentication
         const session = await getServerSession(event)
-
         if (!session || !session.user || !session.user.email) {
             throw createError({
                 statusCode: 401,
-                statusMessage: 'Unauthorized: User not authenticated or email not available'
+                statusMessage: 'Unauthorized: User not authenticated'
             })
         }
 
-        // Find the user by email
-        const user = await prisma.user.findUnique({
-            where: { email: session.user.email }
-        })
+        const boardId = event.context.params?.boardId
 
-        if (!user) {
+        if (!boardId) {
             throw createError({
-                statusCode: 404,
-                statusMessage: 'User not found'
+                statusCode: 400,
+                statusMessage: 'Board ID is required'
             })
         }
 
-        // Fetch boards for the user
-        const boards = await prisma.board.findMany({
+        // Check if the board exists and belongs to the user
+        const board = await prisma.board.findFirst({
             where: {
-                userId: user.id
-            },
-            include: {
+                id: boardId,
                 user: {
-                    select: {
-                        name: true,
-                        email: true
-                    }
+                    email: session.user.email
                 }
             }
         })
 
-        return boards
+        if (!board) {
+            throw createError({
+                statusCode: 404,
+                statusMessage: 'Board not found or access denied'
+            })
+        }
+
+        const lists = await prisma.list.findMany({
+            where: { boardId },
+            include: {
+                cards: {
+                    orderBy: { order: 'asc' }
+                }
+            },
+            orderBy: { order: 'asc' }
+        })
+
+        return lists
     } catch (error) {
-        console.error('Error fetching boards:', error)
+        console.error('Error fetching lists:', error)
         throw createError({
-            statusCode: 500,
-            statusMessage: 'Error fetching boards'
+            statusCode: error.statusCode || 500,
+            statusMessage: error.statusMessage || 'Error fetching lists',
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         })
     }
 })
