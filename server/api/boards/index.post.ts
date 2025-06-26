@@ -1,3 +1,4 @@
+
 import { getServerSession } from '#auth'
 import { PrismaClient } from '@prisma/client'
 import path from 'path'
@@ -24,10 +25,9 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        // Extract only the filename from the backgroundImage path
         const backgroundImage = body.backgroundImage
             ? path.basename(body.backgroundImage)
-            : null
+            : 'default.jpg'
 
         const newBoard = await prisma.board.create({
             data: {

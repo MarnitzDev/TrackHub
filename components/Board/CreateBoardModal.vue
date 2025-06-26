@@ -1,21 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-// Define the emits for this component
 const emit = defineEmits(['close', 'create'])
 
-// Define the props for this component
 const props = defineProps<{
   open: boolean
   loading: boolean
 }>()
 
-// Reactive references for form inputs
 const newBoardTitle = ref('')
 const newBoardDescription = ref('')
 const selectedBackground = ref('')
 
-// List of background images for selection
 const backgroundImages = [
   { id: 'bg1', url: '/images/board-backgrounds/bg1.jpg' },
   { id: 'bg2', url: '/images/board-backgrounds/bg2.jpg' },
@@ -24,16 +20,19 @@ const backgroundImages = [
   { id: 'bg5', url: '/images/board-backgrounds/bg5.jpg' },
 ]
 
-// Function to handle board creation
 const handleCreateBoard = () => {
-  emit('create', {
+  const boardData = {
     title: newBoardTitle.value,
     description: newBoardDescription.value,
-    backgroundImage: selectedBackground.value
-  })
+  }
+
+  if (selectedBackground.value) {
+    boardData['backgroundImage'] = selectedBackground.value
+  }
+
+  emit('create', boardData)
 }
 
-// Function to close the modal and reset form
 const closeModal = () => {
   newBoardTitle.value = ''
   newBoardDescription.value = ''
@@ -74,7 +73,7 @@ const closeModal = () => {
 
           <!-- Background Image Selection -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Background Image:</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Background Image (optional):</label>
             <div class="grid grid-cols-5 gap-2">
               <div
                   v-for="bg in backgroundImages"
@@ -99,7 +98,7 @@ const closeModal = () => {
             </button>
             <button
                 type="submit"
-                :disabled="loading || !newBoardTitle || !selectedBackground"
+                :disabled="loading || !newBoardTitle"
                 class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {{ loading ? 'Creating...' : 'Create Board' }}

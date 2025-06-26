@@ -74,7 +74,7 @@ const confirmDelete = async () => {
         :style="backgroundImageUrl ? `background-image: url(${backgroundImageUrl}); background-size: cover; background-position: center;` : ''"
     >
       <div
-          class="absolute inset-0 bg-gradient-to-b from-black/70 to-transparent"
+          class="absolute inset-0 bg-gradient-to-b from-black/40 to-transparent"
       ></div>
       <div class="absolute inset-x-0 top-0 p-4 flex justify-between items-center">
         <span class="font-semibold text-white text-lg">

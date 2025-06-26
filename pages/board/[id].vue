@@ -323,7 +323,7 @@ const updateCard = async () => {
       :style="backgroundImageUrl ? `background-image: url(${backgroundImageUrl}); background-size: cover; background-position: center; background-attachment: fixed;` : ''"
   >
 
-    <div class="bg-white bg-opacity-90 rounded-lg p-6 mb-6">
+    <div class="rounded-lg mb-6">
       <h1 class="text-3xl font-bold">{{ board.title }}</h1>
     </div>
 
