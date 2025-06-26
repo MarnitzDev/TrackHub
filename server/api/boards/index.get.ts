@@ -1,3 +1,4 @@
+
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from '#auth'
 
@@ -14,48 +15,34 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        const boardId = event.context.params?.boardId
-
-        if (!boardId) {
-            throw createError({
-                statusCode: 400,
-                statusMessage: 'Board ID is required'
-            })
-        }
-
-        // Check if the board exists and belongs to the user
-        const board = await prisma.board.findFirst({
+        // Fetch all boards for the user
+        const boards = await prisma.board.findMany({
             where: {
-                id: boardId,
                 user: {
                     email: session.user.email
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            include: {
+                lists: {
+                    include: {
+                        cards: true
+                    },
+                    orderBy: {
+                        order: 'asc'
+                    }
                 }
             }
         })
 
-        if (!board) {
-            throw createError({
-                statusCode: 404,
-                statusMessage: 'Board not found or access denied'
-            })
-        }
-
-        const lists = await prisma.list.findMany({
-            where: { boardId },
-            include: {
-                cards: {
-                    orderBy: { order: 'asc' }
-                }
-            },
-            orderBy: { order: 'asc' }
-        })
-
-        return lists
+        return boards
     } catch (error) {
-        console.error('Error fetching lists:', error)
+        console.error('Error fetching boards:', error)
         throw createError({
             statusCode: error.statusCode || 500,
-            statusMessage: error.statusMessage || 'Error fetching lists',
+            statusMessage: error.message || 'Error fetching boards',
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         })
     }
