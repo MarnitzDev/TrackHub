@@ -6,7 +6,8 @@ import { useBoardStore } from '~/stores/boardStore'
 // Props and Store
 // -----------------------------
 interface Props {
-  board: Board;
+  board: Board
+  backgroundImageUrl: string | null
 }
 
 const props = defineProps<Props>()
@@ -68,13 +69,10 @@ const confirmDelete = async () => {
       class="block shadow dark:bg-gray-800 rounded-lg overflow-hidden relative hover:shadow-lg transition-shadow duration-300"
       data-testid="board-card"
   >
-    <div class="relative h-36">
-      <img
-          v-if="board.coverImage"
-          :src="board.coverImage"
-          :alt="board.title"
-          class="w-full h-full object-cover"
-      />
+    <div
+        class="relative h-36"
+        :style="backgroundImageUrl ? `background-image: url(${backgroundImageUrl}); background-size: cover; background-position: center;` : ''"
+    >
       <div
           class="absolute inset-0 bg-gradient-to-b from-black/70 to-transparent"
       ></div>

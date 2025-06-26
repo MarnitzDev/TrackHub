@@ -1,12 +1,17 @@
 import { defineStore } from 'pinia'
 import { Board, List } from '@prisma/client'
 
+interface BoardWithLists extends Board {
+    lists?: List[]
+    backgroundImage?: string
+}
+
 export const useBoardStore = defineStore('board', {
     state: () => ({
-        boards: [] as Board[],
+        boards: [] as BoardWithLists[],
         loading: false,
         error: null as string | null,
-        editingBoard: null as Board | null,
+        editingBoard: null as BoardWithLists | null,
     }),
 
     actions: {
@@ -34,7 +39,7 @@ export const useBoardStore = defineStore('board', {
          * @param boardData - The data for the new board.
          * @returns The created board data.
          */
-        async createBoard(boardData: { title: string, description?: string }) {
+        async createBoard(boardData: { title: string, description?: string, backgroundImage?: string }) {
             console.log('boardStore: createBoard')
             try {
                 const data = await $fetch('/api/boards', {
@@ -62,7 +67,7 @@ export const useBoardStore = defineStore('board', {
          * Updates an existing board with the given data.
          * @param boardData - The updated data for the board.
          */
-        async updateBoard(boardData: { id: string, title: string, description?: string }) {
+        async updateBoard(boardData: { id: string, title: string, description?: string, backgroundImage?: string }) {
             console.log('boardStore: updateBoard', boardData)
             this.loading = true
             this.error = null

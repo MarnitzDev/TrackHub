@@ -15,8 +15,7 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    // Ensure that at least one field is being updated
-    if (!body.title && !body.description) {
+    if (!body.title && !body.description && body.backgroundImage === undefined) {
         throw createError({
             statusCode: 400,
             statusMessage: 'No valid fields to update'
@@ -29,6 +28,7 @@ export default defineEventHandler(async (event) => {
             data: {
                 ...(body.title !== undefined && { title: body.title }),
                 ...(body.description !== undefined && { description: body.description }),
+                ...(body.backgroundImage !== undefined && { backgroundImage: body.backgroundImage }),
             },
         })
 

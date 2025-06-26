@@ -1,26 +1,43 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+// Define the emits for this component
 const emit = defineEmits(['close', 'create'])
 
+// Define the props for this component
 const props = defineProps<{
   open: boolean
   loading: boolean
 }>()
 
+// Reactive references for form inputs
 const newBoardTitle = ref('')
 const newBoardDescription = ref('')
+const selectedBackground = ref('')
 
+// List of background images for selection
+const backgroundImages = [
+  { id: 'bg1', url: '/images/board-backgrounds/bg1.jpg' },
+  { id: 'bg2', url: '/images/board-backgrounds/bg2.jpg' },
+  { id: 'bg3', url: '/images/board-backgrounds/bg3.jpg' },
+  { id: 'bg4', url: '/images/board-backgrounds/bg4.jpg' },
+  { id: 'bg5', url: '/images/board-backgrounds/bg5.jpg' },
+]
+
+// Function to handle board creation
 const handleCreateBoard = () => {
   emit('create', {
     title: newBoardTitle.value,
-    description: newBoardDescription.value
+    description: newBoardDescription.value,
+    backgroundImage: selectedBackground.value
   })
 }
 
+// Function to close the modal and reset form
 const closeModal = () => {
   newBoardTitle.value = ''
   newBoardDescription.value = ''
+  selectedBackground.value = ''
   emit('close')
 }
 </script>
@@ -31,6 +48,7 @@ const closeModal = () => {
       <div class="p-6">
         <h2 class="text-2xl font-bold mb-6">Create New Board</h2>
         <form @submit.prevent="handleCreateBoard" class="space-y-6">
+          <!-- Board Title Input -->
           <div>
             <label for="newBoardTitle" class="block text-sm font-medium text-gray-700 mb-1">Title:</label>
             <input
@@ -41,6 +59,8 @@ const closeModal = () => {
                 placeholder="Enter board title"
             >
           </div>
+
+          <!-- Board Description Input -->
           <div>
             <label for="newBoardDescription" class="block text-sm font-medium text-gray-700 mb-1">Description:</label>
             <textarea
@@ -51,6 +71,24 @@ const closeModal = () => {
                 placeholder="Enter board description (optional)"
             ></textarea>
           </div>
+
+          <!-- Background Image Selection -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Background Image:</label>
+            <div class="grid grid-cols-5 gap-2">
+              <div
+                  v-for="bg in backgroundImages"
+                  :key="bg.id"
+                  @click="selectedBackground = bg.url"
+                  class="cursor-pointer rounded-md overflow-hidden border-2 transition-all duration-200"
+                  :class="{ 'border-blue-500 ring-2 ring-blue-500': selectedBackground === bg.url, 'border-transparent hover:border-gray-300': selectedBackground !== bg.url }"
+              >
+                <img :src="bg.url" :alt="bg.id" class="w-full h-16 object-cover">
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
           <div class="flex justify-end space-x-3">
             <button
                 type="button"
@@ -61,7 +99,7 @@ const closeModal = () => {
             </button>
             <button
                 type="submit"
-                :disabled="loading"
+                :disabled="loading || !newBoardTitle || !selectedBackground"
                 class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {{ loading ? 'Creating...' : 'Create Board' }}

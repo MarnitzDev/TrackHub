@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from '#auth'
+import path from 'path'
 
 const prisma = new PrismaClient()
 
@@ -26,19 +27,22 @@ export default defineEventHandler(async (event) => {
         // First, ensure the user exists in the database
         const user = await prisma.user.upsert({
             where: { email: session.user.email },
-            update: {}, // No updates needed if the user exists
+            update: {},
             create: {
                 email: session.user.email,
                 name: session.user.name || null,
-                // Add any other fields that are required for your User model
             },
         })
+
+        // Extract only the filename from the backgroundImage path
+        const backgroundImageName = body.backgroundImage ? path.basename(body.backgroundImage) : null
 
         // Now create the board and link it to the user
         const newBoard = await prisma.board.create({
             data: {
                 title: body.title,
                 description: body.description,
+                backgroundImage: backgroundImageName,
                 user: {
                     connect: {
                         email: session.user.email

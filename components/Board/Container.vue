@@ -28,6 +28,13 @@ const handleCreateBoard = async (boardData) => {
   }
 }
 
+const getBackgroundImageUrl = (imageName: string | null) => {
+  if (imageName) {
+    return `/images/board-backgrounds/${imageName}`
+  }
+  return null
+}
+
 //=============================================================================
 // Edit Board Logic
 //=============================================================================
@@ -79,6 +86,7 @@ onMounted(() => boardStore.fetchBoards())
           v-for="board in boards"
           :key="board.id"
           :board="board"
+          :backgroundImageUrl="getBackgroundImageUrl(board.backgroundImage)"
       />
     </div>
 
