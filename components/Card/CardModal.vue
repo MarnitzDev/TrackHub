@@ -2,17 +2,20 @@
 import { ref, watch } from 'vue'
 import CardEditor from '~/components/Card/CardEditor.vue'
 import { Card } from '@prisma/client'
+import { useCardStore } from '~/stores/cardStore'
 
-// Props and Emits
+// Props
 // -----------------------------
 interface Props {
   isOpen: boolean
-  card: Card | null
+  cardId: string | null
 }
 
 const props = defineProps<Props>()
 
-const emit = defineEmits(['update:isOpen', 'save', 'delete'])
+// Store
+// -----------------------------
+const cardStore = useCardStore()
 
 // State
 // -----------------------------
@@ -20,9 +23,12 @@ const localCard = ref<Card | null>(null)
 
 // Watchers
 // -----------------------------
-watch(() => props.card, (newCard) => {
-  if (newCard) {
-    localCard.value = { ...newCard }
+watch(() => props.cardId, (newCardId) => {
+  if (newCardId) {
+    const card = cardStore.cards.find(c => c.id === newCardId)
+    if (card) {
+      localCard.value = { ...card }
+    }
   }
 }, { immediate: true })
 
@@ -31,30 +37,30 @@ watch(() => props.card, (newCard) => {
 //=============================================================================
 
 const closeModal = () => {
-  emit('update:isOpen', false)
+  cardStore.closeCard()
 }
 
 //=============================================================================
 // Card Operations
 //=============================================================================
 
-const saveChanges = () => {
+const saveChanges = async () => {
   if (localCard.value) {
-    emit('save', localCard.value)
+    await cardStore.editCard(localCard.value.id, localCard.value)
   }
   closeModal()
 }
 
-const deleteCard = () => {
+const deleteCard = async () => {
   if (localCard.value) {
-    emit('delete', localCard.value.id)
+    await cardStore.deleteCard(localCard.value.id)
   }
   closeModal()
 }
 </script>
 
 <template>
-  <UModal :open="isOpen" @update:open="emit('update:isOpen', $event)" :title="card?.title || 'Card Details'" prevent-close :ui="{ footer: 'justify-end' }">
+  <UModal :open="isOpen" @update:open="closeModal" :title="localCard?.title || 'Card Details'" prevent-close :ui="{ footer: 'justify-end' }">
     <template #body>
       <div v-if="localCard" class="space-y-4">
         <div class="flex items-start space-x-3">
@@ -73,7 +79,7 @@ const deleteCard = () => {
           <div class="flex-grow">
             <h4 class="font-medium mb-2">Description</h4>
             <CardEditor
-                v-model="localCard.description"
+                :cardId="localCard.id"
             />
           </div>
         </div>

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useBoardStore } from '~/stores/boardStore'
 
-// Define the emits for this component
-const emit = defineEmits(['close', 'create'])
+// Store
+const boardStore = useBoardStore()
 
 // Define the props for this component
 const props = defineProps<{
   open: boolean
-  loading: boolean
 }>()
 
 // Reactive references for form inputs
@@ -25,12 +25,18 @@ const backgroundImages = [
 ]
 
 // Function to handle board creation
-const handleCreateBoard = () => {
-  emit('create', {
-    title: newBoardTitle.value,
-    description: newBoardDescription.value,
-    backgroundImage: selectedBackground.value
-  })
+const handleCreateBoard = async () => {
+  try {
+    await boardStore.createBoard({
+      title: newBoardTitle.value,
+      description: newBoardDescription.value,
+      backgroundImage: selectedBackground.value
+    })
+    closeModal()
+  } catch (error) {
+    console.error('Failed to create board:', error)
+    // Handle error (e.g., show error message to user)
+  }
 }
 
 // Function to close the modal and reset form
@@ -38,7 +44,7 @@ const closeModal = () => {
   newBoardTitle.value = ''
   newBoardDescription.value = ''
   selectedBackground.value = ''
-  emit('close')
+  boardStore.setEditingBoard(null) // Assuming this is used to control modal visibility
 }
 </script>
 
@@ -99,10 +105,10 @@ const closeModal = () => {
             </button>
             <button
                 type="submit"
-                :disabled="loading || !newBoardTitle || !selectedBackground"
+                :disabled="boardStore.loading || !newBoardTitle || !selectedBackground"
                 class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {{ loading ? 'Creating...' : 'Create Board' }}
+              {{ boardStore.loading ? 'Creating...' : 'Create Board' }}
             </button>
           </div>
         </form>

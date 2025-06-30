@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Card } from '@prisma/client'
+import { useCardStore } from '~/stores/cardStore'
 
-// Props and Emits
+// Props
 // -----------------------------
 interface Props {
   card: Card
@@ -9,16 +10,16 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{
-  (e: 'open', card: Card): void
-}>()
+// Store
+// -----------------------------
+const cardStore = useCardStore()
 
 //=============================================================================
 // Card Interactions
 //=============================================================================
 
 const openCard = () => {
-  emit('open', props.card)
+  cardStore.openCard(props.card)
 }
 </script>
 

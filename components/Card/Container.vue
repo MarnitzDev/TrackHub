@@ -4,8 +4,10 @@ import draggable from 'vuedraggable'
 import { Card } from '@prisma/client'
 import CardItem from './Item.vue'
 import CardModal from './CardModal.vue'
+import { useCardStore } from '~/stores/cardStore'
+import { useListStore } from '~/stores/listStore'
 
-// Props and Emits
+// Props
 // -----------------------------
 interface Props {
   cards: Card[]
@@ -14,12 +16,10 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{
-  (e: 'reorderCards', payload: { listId: string, cardIds: string[] }): void
-  (e: 'moveCard', payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }): void
-  (e: 'editCard', card: Card): void
-  (e: 'deleteCard', cardId: string): void
-}>()
+// Stores
+// -----------------------------
+const cardStore = useCardStore()
+const listStore = useListStore()
 
 // State
 // -----------------------------
@@ -37,17 +37,17 @@ watch(() => props.cards, (newCards) => {
 // Card Management
 //=============================================================================
 
-const handleCardChange = (event: any) => {
+const handleCardChange = async (event: any) => {
   if (event.added) {
     const { element: card, newIndex } = event.added
-    emit('moveCard', {
+    await cardStore.moveCard({
       cardId: card.id,
       fromListId: card.listId,
       toListId: props.listId,
       newIndex
     })
   } else if (event.moved) {
-    emit('reorderCards', {
+    await listStore.reorderCards({
       listId: props.listId,
       cardIds: localCards.value.map(card => card.id)
     })
@@ -59,29 +59,29 @@ const openCardModal = (card: Card) => {
   isCardModalOpen.value = true
 }
 
-const editCard = (card: Card) => {
-  emit('editCard', card)
+const editCard = async (card: Card) => {
+  await cardStore.editCard(card.id, card)
 }
 
-const deleteCard = (cardId: string) => {
-  emit('deleteCard', cardId)
+const deleteCard = async (cardId: string) => {
+  await cardStore.deleteCard(cardId)
 }
 
 //=============================================================================
 // Modal Interactions
 //=============================================================================
 
-const handleCardSave = (updatedCard: Card) => {
+const handleCardSave = async (updatedCard: Card) => {
+  await cardStore.editCard(updatedCard.id, updatedCard)
   const index = localCards.value.findIndex(card => card.id === updatedCard.id)
   if (index !== -1) {
     localCards.value[index] = updatedCard
   }
-  emit('editCard', updatedCard)
   isCardModalOpen.value = false
 }
 
-const handleCardDelete = (cardId: string) => {
-  emit('deleteCard', cardId)
+const handleCardDelete = async (cardId: string) => {
+  await cardStore.deleteCard(cardId)
   isCardModalOpen.value = false
 }
 </script>

@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useCardStore } from '~/stores/cardStore'
 
-// Props and Emits
+// Props
 // -----------------------------
-const props = defineProps(['modelValue'])
-const emit = defineEmits(['update:modelValue'])
+const props = defineProps(['cardId'])
+
+// Store
+// -----------------------------
+const cardStore = useCardStore()
 
 // State
 // -----------------------------
 const QuillEditor = ref(null)
-const editorContent = ref(props.modelValue)
+const editorContent = ref('')
 
 //=============================================================================
 // Quill Editor Configuration
@@ -43,13 +47,19 @@ onMounted(async () => {
     const { QuillEditor: QE } = await import('@vueup/vue-quill')
     QuillEditor.value = QE
   }
+
+  // Initialize editor content from the store
+  const card = cardStore.cards.find(c => c.id === props.cardId)
+  if (card) {
+    editorContent.value = card.description || ''
+  }
 })
 
 // Watchers
 // -----------------------------
-watch(() => props.modelValue, (newValue) => {
-  if (newValue !== editorContent.value) {
-    editorContent.value = newValue
+watch(() => cardStore.selectedCard, (newCard) => {
+  if (newCard && newCard.id === props.cardId) {
+    editorContent.value = newCard.description || ''
   }
 })
 
@@ -57,9 +67,9 @@ watch(() => props.modelValue, (newValue) => {
 // Editor Content Management
 //=============================================================================
 
-const updateContent = (content) => {
+const updateContent = async (content: string) => {
   editorContent.value = content
-  emit('update:modelValue', content)
+  await cardStore.editCard(props.cardId, { description: content })
 }
 </script>
 

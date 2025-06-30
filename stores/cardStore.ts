@@ -7,8 +7,24 @@ export const useCardStore = defineStore('card', {
         cards: [] as Card[],
         loading: false,
         error: null as string | null,
+        selectedCard: null as Card | null,
     }),
     actions: {
+        /**
+         * Opens a card by setting it as the selected card.
+         * @param card - The card to be opened.
+         */
+        openCard(card: Card) {
+            this.selectedCard = card
+        },
+
+        /**
+         * Closes the currently selected card.
+         */
+        closeCard() {
+            this.selectedCard = null
+        },
+
         /**
          * Creates a new card.
          * @param cardData - Data for the new card.
@@ -48,6 +64,9 @@ export const useCardStore = defineStore('card', {
                 if (index !== -1) {
                     this.cards[index] = updatedCard
                 }
+                if (this.selectedCard && this.selectedCard.id === cardId) {
+                    this.selectedCard = updatedCard
+                }
                 return updatedCard
             } catch (error) {
                 console.error('Error editing card:', error)
@@ -65,6 +84,9 @@ export const useCardStore = defineStore('card', {
                     method: 'DELETE'
                 })
                 this.cards = this.cards.filter(c => c.id !== cardId)
+                if (this.selectedCard && this.selectedCard.id === cardId) {
+                    this.selectedCard = null
+                }
                 const listStore = useListStore()
                 listStore.removeCardFromList(cardId)
             } catch (e: any) {
