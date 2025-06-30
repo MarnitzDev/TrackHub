@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useBoardStore } from '~/stores/boardStore'
 import BoardCard from '~/components/Board/Item.vue'
@@ -9,23 +9,25 @@ import EditBoardModal from '~/components/Board/EditBoardModal.vue'
 // Store and Shared State
 // -----------------------------
 const boardStore = useBoardStore()
-const { boards, loading, error, editingBoard } = storeToRefs(boardStore)
+const { boards, loading, error, editingBoard, isCreateModalOpen, isEditModalOpen } = storeToRefs(boardStore)
 
 //=============================================================================
 // Create Board Logic
 //=============================================================================
 
-const showCreateBoardModal = ref(false)
-
 const handleCreateBoard = async (boardData) => {
   try {
     await boardStore.createBoard(boardData)
-    showCreateBoardModal.value = false
+    boardStore.setCreateModalOpen(false)
     // toast.success('Board created successfully!')
   } catch (error) {
     console.error('Error creating board:', error)
     // toast.error('Failed to create board. Please try again.')
   }
+}
+
+const openCreateBoardModal = () => {
+  boardStore.setCreateModalOpen(true)
 }
 
 const getBackgroundImageUrl = (imageName: string | null) => {
@@ -38,8 +40,6 @@ const getBackgroundImageUrl = (imageName: string | null) => {
 //=============================================================================
 // Edit Board Logic
 //=============================================================================
-
-const showEditBoardModal = computed(() => !!editingBoard.value)
 
 const handleUpdateBoard = async (boardData) => {
   try {
@@ -73,7 +73,7 @@ onMounted(() => boardStore.fetchBoards())
     <div v-else-if="boards.length === 0" class="text-center py-10">
       <p class="text-xl text-gray-600">You don't have any boards yet.</p>
       <button
-          @click="showCreateBoardModal = true"
+          @click="openCreateBoardModal"
           class="mt-4 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-lg font-semibold"
           data-testid="create-board-button"
       >
@@ -93,7 +93,7 @@ onMounted(() => boardStore.fetchBoards())
     <!-- New Board Button (when boards exist) -->
     <button
         v-if="boards.length > 0"
-        @click="showCreateBoardModal = true"
+        @click="openCreateBoardModal"
         class="mt-8 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-lg font-semibold"
     >
       Create New Board
@@ -101,16 +101,14 @@ onMounted(() => boardStore.fetchBoards())
 
     <!-- Create Board Modal -->
     <CreateBoardModal
-        :open="showCreateBoardModal"
-        :loading="loading"
-        @close="showCreateBoardModal = false"
+        :open="isCreateModalOpen"
+        @close="boardStore.setCreateModalOpen(false)"
         @create="handleCreateBoard"
     />
 
     <!-- Edit Board Modal -->
     <EditBoardModal
-        :open="showEditBoardModal"
-        :loading="loading"
+        :open="isEditModalOpen"
         :board="editingBoard"
         @close="boardStore.setEditingBoard(null)"
         @update="handleUpdateBoard"

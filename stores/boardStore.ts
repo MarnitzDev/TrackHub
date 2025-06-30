@@ -12,6 +12,8 @@ export const useBoardStore = defineStore('board', {
         loading: false,
         error: null as string | null,
         editingBoard: null as BoardWithLists | null,
+        isCreateModalOpen: false,
+        isEditModalOpen: false,
     }),
 
     actions: {
@@ -66,6 +68,7 @@ export const useBoardStore = defineStore('board', {
                 throw e
             } finally {
                 this.loading = false
+                this.isCreateModalOpen = false
             }
         },
 
@@ -76,6 +79,7 @@ export const useBoardStore = defineStore('board', {
         setEditingBoard(board: Board | null) {
             console.log('boardStore: setEditingBoard', board)
             this.editingBoard = board ? { ...board } : null
+            this.isEditModalOpen = !!board
         },
 
         /**
@@ -99,6 +103,7 @@ export const useBoardStore = defineStore('board', {
                 throw e
             } finally {
                 this.loading = false
+                this.isEditModalOpen = false
             }
         },
 
@@ -141,6 +146,22 @@ export const useBoardStore = defineStore('board', {
             } else {
                 console.error('Current board not found when adding new list')
             }
-        }
+        },
+
+        /**
+         * Sets the create modal open state.
+         * @param isOpen - Boolean indicating whether the create modal should be open.
+         */
+        setCreateModalOpen(isOpen: boolean) {
+            this.isCreateModalOpen = isOpen
+        },
+
+        /**
+         * Sets the edit modal open state.
+         * @param isOpen - Boolean indicating whether the edit modal should be open.
+         */
+        setEditModalOpen(isOpen: boolean) {
+            this.isEditModalOpen = isOpen
+        },
     },
 })
