@@ -2,27 +2,21 @@
 import { ref } from 'vue'
 import { List, Card } from '@prisma/client'
 import CardContainer from '../Card/Container.vue'
+import { useListStore } from '~/stores/listStore'
+import { useCardStore } from '~/stores/cardStore'
 
-// Props and Emits
-// -----------------------------
+// Props
 interface Props {
   list: List & { cards: Card[] }
 }
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{
-  (e: 'createCard', listId: string): void
-  (e: 'editCard', cardId: string, updatedData: Partial<Card>): void
-  (e: 'deleteCard', cardId: string, listId: string): void
-  (e: 'editList', listId: string, updatedData: Partial<List>): void
-  (e: 'deleteList', listId: string): void
-  (e: 'reorderCards', payload: { listId: string, cardIds: string[] }): void
-  (e: 'moveCard', payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }): void
-}>()
+// Stores
+const listStore = useListStore()
+const cardStore = useCardStore()
 
 // State
-// -----------------------------
 const isEditModalOpen = ref(false)
 const editedTitle = ref(props.list.title)
 
@@ -35,39 +29,80 @@ const openEditModal = () => {
   isEditModalOpen.value = true
 }
 
-const saveListTitle = () => {
+const saveListTitle = async () => {
   if (editedTitle.value.trim() !== '') {
-    emit('editList', props.list.id, { title: editedTitle.value.trim() })
-    isEditModalOpen.value = false
+    try {
+      await listStore.editList(props.list.id, { title: editedTitle.value.trim() })
+      isEditModalOpen.value = false
+    } catch (error) {
+      console.error('Error updating list title:', error)
+      // Handle error (e.g., show an error message)
+    }
   }
 }
 
-const deleteList = () => {
-  emit('deleteList', props.list.id)
+const deleteList = async () => {
+  try {
+    await listStore.deleteList(props.list.id)
+    // Optionally handle successful deletion (e.g., show a success message)
+  } catch (error) {
+    console.error('Error deleting list:', error)
+    // Handle error (e.g., show an error message)
+  }
 }
 
 //=============================================================================
 // Card Management
 //=============================================================================
 
-const handleCreateCard = () => {
-  emit('createCard', props.list.id)
+const handleCreateCard = async () => {
+  try {
+    await cardStore.createCard({ title: 'New Card', listId: props.list.id })
+    // Optionally handle successful card creation (e.g., show a success message)
+  } catch (error) {
+    console.error('Error creating card:', error)
+    // Handle error (e.g., show an error message)
+  }
 }
 
-const handleEditCard = (cardId: string, updatedData: Partial<Card>) => {
-  emit('editCard', cardId, updatedData)
+const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
+  try {
+    await cardStore.updateCard({ id: cardId, ...updatedData })
+    // Optionally handle successful card update (e.g., show a success message)
+  } catch (error) {
+    console.error('Error updating card:', error)
+    // Handle error (e.g., show an error message)
+  }
 }
 
-const handleDeleteCard = (cardId: string) => {
-  emit('deleteCard', cardId, props.list.id)
+const handleDeleteCard = async (cardId: string) => {
+  try {
+    await cardStore.deleteCard(cardId)
+    // Optionally handle successful card deletion (e.g., show a success message)
+  } catch (error) {
+    console.error('Error deleting card:', error)
+    // Handle error (e.g., show an error message)
+  }
 }
 
-const handleReorderCards = (payload: { listId: string, cardIds: string[] }) => {
-  emit('reorderCards', payload)
+const handleReorderCards = async (payload: { listId: string, cardIds: string[] }) => {
+  try {
+    await cardStore.reorderCards(payload.listId, payload.cardIds)
+    // Optionally handle successful reordering (e.g., show a success message)
+  } catch (error) {
+    console.error('Error reordering cards:', error)
+    // Handle error (e.g., show an error message)
+  }
 }
 
-const handleMoveCard = (payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }) => {
-  emit('moveCard', payload)
+const handleMoveCard = async (payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }) => {
+  try {
+    await cardStore.moveCard(payload)
+    // Optionally handle successful card move (e.g., show a success message)
+  } catch (error) {
+    console.error('Error moving card:', error)
+    // Handle error (e.g., show an error message)
+  }
 }
 </script>
 

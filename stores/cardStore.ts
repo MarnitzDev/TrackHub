@@ -20,9 +20,12 @@ export const useCardStore = defineStore('card', {
                     method: 'POST',
                     body: cardData
                 })
+
                 this.cards.push(newCard)
+
                 const listStore = useListStore()
                 listStore.addCardToList(newCard.listId, newCard)
+
                 return newCard
             } catch (e: any) {
                 console.error('Error creating card:', e)

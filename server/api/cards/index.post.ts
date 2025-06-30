@@ -1,3 +1,4 @@
+
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -13,12 +14,22 @@ export default defineEventHandler(async (event) => {
         })
     }
 
+    // Ensure listId is a string
+    const listIdString = typeof listId === 'object' && listId.listId ? listId.listId : listId
+
+    if (typeof listIdString !== 'string') {
+        throw createError({
+            statusCode: 400,
+            statusMessage: 'Invalid listId format'
+        })
+    }
+
     try {
         const newCard = await prisma.card.create({
             data: {
                 title,
                 description,
-                listId,
+                listId: listIdString,
             },
         })
         return newCard

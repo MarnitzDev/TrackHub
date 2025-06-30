@@ -134,7 +134,11 @@ export const useListStore = defineStore('list', {
         addCardToList(listId: string, card: Card) {
             const list = this.lists.find(l => l.id === listId)
             if (list) {
+                if (!Array.isArray(list.cards)) {
+                    list.cards = []
+                }
                 list.cards.push(card)
+                this.lists = [...this.lists]
             }
         },
 

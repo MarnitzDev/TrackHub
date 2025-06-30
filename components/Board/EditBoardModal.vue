@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Board } from '@prisma/client'
+import { useBoardStore } from '~/stores/boardStore'
 
 const props = defineProps<{
   open: boolean
-  loading: boolean
   board: Board | null
 }>()
 
-const emit = defineEmits(['close', 'update'])
+const boardStore = useBoardStore()
 
 const boardTitle = ref('')
 const boardDescription = ref('')
@@ -31,19 +31,25 @@ watch(() => props.board, (newBoard) => {
   }
 }, { immediate: true })
 
-const handleUpdateBoard = () => {
+const handleUpdateBoard = async () => {
   if (!props.board || !boardTitle.value.trim()) return
 
-  emit('update', {
-    id: props.board.id,
-    title: boardTitle.value,
-    description: boardDescription.value,
-    backgroundImage: selectedBackground.value
-  })
+  try {
+    await boardStore.updateBoard({
+      id: props.board.id,
+      title: boardTitle.value,
+      description: boardDescription.value,
+      backgroundImage: selectedBackground.value
+    })
+    closeModal()
+  } catch (error) {
+    console.error('Error updating board:', error)
+    // Handle error (e.g., show an error message)
+  }
 }
 
 const closeModal = () => {
-  emit('close')
+  boardStore.setEditingBoard(null)
 }
 </script>
 
@@ -100,10 +106,10 @@ const closeModal = () => {
             </button>
             <button
                 type="submit"
-                :disabled="loading || !boardTitle || !selectedBackground"
+                :disabled="boardStore.loading || !boardTitle || !selectedBackground"
                 class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {{ loading ? 'Updating...' : 'Update Board' }}
+              {{ boardStore.loading ? 'Updating...' : 'Update Board' }}
             </button>
           </div>
         </form>

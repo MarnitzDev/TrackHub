@@ -4,22 +4,20 @@ import { storeToRefs } from 'pinia'
 import draggable from 'vuedraggable'
 import { Board, List, Card } from '@prisma/client'
 import { useListStore } from '~/stores/listStore'
+import { useCardStore } from '~/stores/cardStore'
 import ListItem from './Item.vue'
 import { useRoute } from 'vue-router'
 
-// Props and Emits
-// -----------------------------
+// Props
 interface Props {
   boardId: string
 }
 
 const props = defineProps<Props>()
 
-const emit = defineEmits(['createCard', 'editCard', 'deleteCard', 'editList', 'deleteList', 'reorderCards', 'moveCard'])
-
-// Store and Route
-// -----------------------------
+// Stores and Route
 const listStore = useListStore()
+const cardStore = useCardStore()
 const route = useRoute()
 const { lists, loading, error } = storeToRefs(listStore)
 
@@ -69,29 +67,59 @@ const handleEditList = async (listId: string, updatedData: Partial<List>) => {
 // Card Management
 //=============================================================================
 
-const handleCreateCard = (listId: string, cardData: Partial<Card>) => {
+const handleCreateCard = async (listId: string, cardData: Partial<Card>) => {
   console.log('handleCreateCard called with listId:', listId, 'and cardData:', cardData);
-  emit('createCard', { listId, cardData })
+  try {
+    await cardStore.createCard({ ...cardData, listId })
+    console.log('Card created successfully')
+  } catch (error) {
+    console.error('Error creating card:', error)
+    // Handle error (e.g., show an error message to the user)
+  }
 }
 
-const handleEditCard = (cardId: string, updatedData: Partial<Card>) => {
+const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
   console.log('handleEditCard called with cardId:', cardId, 'and updatedData:', updatedData);
-  emit('editCard', { cardId, updatedData })
+  try {
+    await cardStore.updateCard({ id: cardId, ...updatedData })
+    console.log('Card updated successfully')
+  } catch (error) {
+    console.error('Error updating card:', error)
+    // Handle error (e.g., show an error message to the user)
+  }
 }
 
-const handleDeleteCard = (cardId: string, listId: string) => {
+const handleDeleteCard = async (cardId: string, listId: string) => {
   console.log('handleDeleteCard called with cardId:', cardId, 'and listId:', listId);
-  emit('deleteCard', { cardId, listId })
+  try {
+    await cardStore.deleteCard(cardId)
+    console.log('Card deleted successfully')
+  } catch (error) {
+    console.error('Error deleting card:', error)
+    // Handle error (e.g., show an error message to the user)
+  }
 }
 
-const handleReorderCards = (listId: string, cardIds: string[]) => {
+const handleReorderCards = async (listId: string, cardIds: string[]) => {
   console.log('handleReorderCards called with listId:', listId, 'and cardIds:', cardIds);
-  emit('reorderCards', { listId, cardIds })
+  try {
+    await cardStore.reorderCards(listId, cardIds)
+    console.log('Cards reordered successfully')
+  } catch (error) {
+    console.error('Error reordering cards:', error)
+    // Handle error (e.g., show an error message to the user)
+  }
 }
 
-const handleMoveCard = (payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }) => {
+const handleMoveCard = async (payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }) => {
   console.log('handleMoveCard called with payload:', payload);
-  emit('moveCard', payload)
+  try {
+    await cardStore.moveCard(payload)
+    console.log('Card moved successfully')
+  } catch (error) {
+    console.error('Error moving card:', error)
+    // Handle error (e.g., show an error message to the user)
+  }
 }
 
 //=============================================================================
@@ -113,10 +141,10 @@ const handleDeleteList = async () => {
   try {
     await listStore.deleteList(listToDelete.value)
     console.log('List deleted successfully')
-    emit('listDeleted', listToDelete.value)
+    // useToast().add({ title: 'Success', description: 'List deleted successfully', color: 'green' })
   } catch (error) {
     console.error('Error deleting list:', error)
-    emit('listDeleteError', { listId: listToDelete.value, error })
+    // useToast().add({ title: 'Error', description: 'Failed to delete list', color: 'red' })
   } finally {
     showDeleteConfirm.value = false
     listToDelete.value = null
