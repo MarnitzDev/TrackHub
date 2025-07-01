@@ -319,29 +319,32 @@ const updateCard = async () => {
 <template>
   <div
       v-if="board"
-      class="min-h-screen px-4 py-8"
+      class="min-h-screen"
       :style="backgroundImageUrl ? `background-image: url(${backgroundImageUrl}); background-size: cover; background-position: center; background-attachment: fixed;` : ''"
   >
-
-    <div class="rounded-lg mb-6">
-      <h1 class="text-3xl font-bold">{{ board.title }}</h1>
+    <div class="w-full py-4 mb-6" style="background-color: rgba(255, 255, 255, 0.2);">
+      <div class="container mx-auto px-4">
+        <h1 class="text-xl font-bold text-white">{{ board.title }}</h1>
+      </div>
     </div>
 
-    <ListContainer
-        v-if="board.lists"
-        :board="board"
-        :lists="board.lists"
-        @createCard="openCreateCardModal"
-        @editCard="editCard"
-        @deleteCard="deleteCard"
-        @moveCard="updateCardList"
-        @reorderCards="reorderCards"
-        @reorderLists="reorderLists"
-    />
+    <div class="container mx-auto px-4">
+      <ListContainer
+          v-if="board.lists"
+          :board="board"
+          :lists="board.lists"
+          @createCard="openCreateCardModal"
+          @editCard="editCard"
+          @deleteCard="deleteCard"
+          @moveCard="updateCardList"
+          @reorderCards="reorderCards"
+          @reorderLists="reorderLists"
+      />
 
-    <button @click="showCreateListModal = true" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">
-      Add New List
-    </button>
+      <button @click="showCreateListModal = true" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">
+        Add New List
+      </button>
+    </div>
 
     <!-- Create List Modal -->
     <UModal :open="showCreateListModal">
