@@ -1,4 +1,3 @@
-
 import { defineStore } from 'pinia'
 import { List, Card } from '@prisma/client'
 import { useBoardStore } from './boardStore'
@@ -73,10 +72,7 @@ export const useListStore = defineStore('list', {
                     method: 'PUT',
                     body: updatedData
                 });
-                const index = this.lists.findIndex(list => list.id === listId);
-                if (index !== -1) {
-                    this.lists[index] = { ...this.lists[index], ...updatedList };
-                }
+                this.updateList(listId, updatedList);
             } catch (error) {
                 console.error('Error editing list:', error);
                 throw error;
@@ -92,7 +88,7 @@ export const useListStore = defineStore('list', {
                 await $fetch(`/api/boards/${boardId}/lists/${listId}`, {
                     method: 'DELETE'
                 });
-                this.lists = this.lists.filter(l => l.id !== listId);
+                this.removeList(listId);
             } catch (e: any) {
                 console.error('Error deleting list:', e);
                 throw e;
@@ -143,10 +139,12 @@ export const useListStore = defineStore('list', {
             }
         },
 
-        removeCardFromList(cardId: string) {
-            this.lists.forEach(list => {
+        removeCardFromList(listId: string, cardId: string) {
+            const list = this.lists.find(l => l.id === listId);
+            if (list) {
                 list.cards = list.cards.filter(c => c.id !== cardId);
-            });
+                this.lists = [...this.lists];
+            }
         },
 
         moveCard({ cardId, fromListId, toListId, newIndex }: { cardId: string, fromListId: string, toListId: string, newIndex: number }) {
@@ -157,6 +155,7 @@ export const useListStore = defineStore('list', {
                 if (card) {
                     fromList.cards = fromList.cards.filter(c => c.id !== cardId);
                     toList.cards.splice(newIndex, 0, card);
+                    this.lists = [...this.lists];
                 }
             }
         },
@@ -171,11 +170,7 @@ export const useListStore = defineStore('list', {
                     });
 
                     if (Array.isArray(updatedCards)) {
-                        list.cards = updatedCards.map(updatedCard => ({
-                            ...list.cards.find(c => c.id === updatedCard.id),
-                            ...updatedCard
-                        }));
-                        this.lists = [...this.lists];
+                        this.updateCardOrder(listId, updatedCards);
                     } else {
                         throw new Error('Unexpected server response format');
                     }
@@ -185,5 +180,54 @@ export const useListStore = defineStore('list', {
                 }
             }
         },
+
+        // New methods for optimistic updates
+        updateList(listId: string, updatedData: Partial<List>) {
+            const index = this.lists.findIndex(list => list.id === listId);
+            if (index !== -1) {
+                this.lists[index] = { ...this.lists[index], ...updatedData };
+                this.lists = [...this.lists];
+            }
+        },
+
+        replaceCard(listId: string, oldCardId: string, newCard: Card) {
+            const list = this.lists.find(list => list.id === listId);
+            if (list) {
+                const cardIndex = list.cards.findIndex(card => card.id === oldCardId);
+                if (cardIndex !== -1) {
+                    list.cards[cardIndex] = newCard;
+                    this.lists = [...this.lists];
+                }
+            }
+        },
+
+        updateCard(cardId: string, updatedData: Partial<Card>) {
+            this.lists.forEach(list => {
+                const cardIndex = list.cards.findIndex(card => card.id === cardId);
+                if (cardIndex !== -1) {
+                    list.cards[cardIndex] = { ...list.cards[cardIndex], ...updatedData };
+                }
+            });
+            this.lists = [...this.lists];
+        },
+
+        updateCardOrder(listId: string, updatedCards: Card[]) {
+            const list = this.lists.find(l => l.id === listId);
+            if (list) {
+                list.cards = updatedCards;
+                this.lists = [...this.lists];
+            }
+        },
+
+        removeList(listId: string) {
+            const removedList = this.lists.find(list => list.id === listId);
+            this.lists = this.lists.filter(list => list.id !== listId);
+            return removedList;
+        },
+
+        addList(list: ListWithCards) {
+            this.lists.push(list);
+            this.lists = [...this.lists];
+        }
     },
 });

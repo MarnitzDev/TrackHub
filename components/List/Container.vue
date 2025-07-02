@@ -8,27 +8,20 @@ import { useCardStore } from '~/stores/cardStore'
 import ListItem from './Item.vue'
 import { useRoute } from 'vue-router'
 
-// Props
 interface Props {
   boardId: string
 }
 
 const props = defineProps<Props>()
 
-// Stores and Route
 const listStore = useListStore()
 const cardStore = useCardStore()
 const route = useRoute()
-const { lists, loading, error } = storeToRefs(listStore)
+const { loading, error } = storeToRefs(listStore)
 
-// Computed Properties
-const sortedLists = computed(() => {
-  return [...listStore.sortedLists]
-})
+const sortedLists = computed(() => listStore.sortedLists)
 
-// Lifecycle Hooks
 onMounted(async () => {
-  console.log("Component: Fetching lists for boardId:", props.boardId)
   if (props.boardId) {
     await listStore.fetchLists(props.boardId)
   } else {
@@ -36,88 +29,98 @@ onMounted(async () => {
   }
 })
 
-// List Management
 const handleListChange = async (event: any) => {
-  console.log('List change event:', event);
   if (event.moved) {
-    const newOrder = sortedLists.value.map((list, index) => ({ id: list.id, order: index }));
-    console.log('New list order:', newOrder);
+    const newOrder = sortedLists.value.map((list, index) => ({ id: list.id, order: index }))
+
+    // Optimistic update
+    listStore.updateListOrder(newOrder)
+
     try {
-      await listStore.reorderLists(props.boardId, newOrder);
-      console.log('Lists reordered successfully');
+      await listStore.reorderLists(props.boardId, newOrder)
     } catch (error) {
-      console.error('Error reordering lists:', error);
-      // Fetch lists again to ensure correct order
-      await listStore.fetchLists(props.boardId);
+      console.error('Error reordering lists:', error)
+      await listStore.fetchLists(props.boardId)
     }
   }
 }
 
 const handleEditList = async (listId: string, updatedData: Partial<List>) => {
-  console.log('handleEditList called with listId:', listId, 'and updatedData:', updatedData);
+  // Optimistic update
+  listStore.updateList(listId, updatedData)
+
   try {
     await listStore.editList(props.boardId, listId, updatedData)
-    console.log('List updated successfully')
   } catch (error) {
     console.error('Error updating list:', error)
+    await listStore.fetchLists(props.boardId)
   }
 }
 
-// Card Management
 const handleCreateCard = async (listId: string, cardData: Partial<Card>) => {
-  console.log('handleCreateCard called with listId:', listId, 'and cardData:', cardData);
+  const tempId = `temp-${Date.now()}`
+  const tempCard = { id: tempId, ...cardData, listId } as Card
+
+  // Optimistic update
+  listStore.addCardToList(listId, tempCard)
+
   try {
     const newCard = await cardStore.createCard({ ...cardData, listId })
-    listStore.addCardToList(listId, newCard)
-    console.log('Card created successfully')
+    listStore.replaceCard(listId, tempId, newCard)
   } catch (error) {
     console.error('Error creating card:', error)
+    listStore.removeCardFromList(listId, tempId)
   }
 }
 
 const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
-  console.log('handleEditCard called with cardId:', cardId, 'and updatedData:', updatedData);
+  // Optimistic update
+  listStore.updateCard(cardId, updatedData)
+
   try {
     await cardStore.updateCard({ id: cardId, ...updatedData })
-    console.log('Card updated successfully')
   } catch (error) {
     console.error('Error updating card:', error)
+    await listStore.fetchLists(props.boardId)
   }
 }
 
 const handleDeleteCard = async (cardId: string, listId: string) => {
-  console.log('handleDeleteCard called with cardId:', cardId, 'and listId:', listId);
+  // Optimistic update
+  listStore.removeCardFromList(listId, cardId)
+
   try {
     await cardStore.deleteCard(cardId)
-    listStore.removeCardFromList(cardId)
-    console.log('Card deleted successfully')
   } catch (error) {
     console.error('Error deleting card:', error)
+    await listStore.fetchLists(props.boardId)
   }
 }
 
 const handleReorderCards = async (listId: string, cardIds: string[]) => {
-  console.log('handleReorderCards called with listId:', listId, 'and cardIds:', cardIds);
+  // Optimistic update
+  listStore.updateCardOrder(listId, cardIds)
+
   try {
     await listStore.reorderCards(listId, cardIds)
-    console.log('Cards reordered successfully')
   } catch (error) {
     console.error('Error reordering cards:', error)
+    await listStore.fetchLists(props.boardId)
   }
 }
 
 const handleMoveCard = async (payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }) => {
-  console.log('handleMoveCard called with payload:', payload);
+  // Optimistic update
+  listStore.moveCard(payload)
+
   try {
     await cardStore.moveCard(payload)
-    listStore.moveCard(payload)
-    console.log('Card moved successfully')
   } catch (error) {
     console.error('Error moving card:', error)
+    await listStore.fetchLists(props.boardId)
   }
 }
 
-// List Deletion
 const listToDelete = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
 
@@ -129,14 +132,14 @@ const handleDeleteListRequest = (listId: string) => {
 const handleDeleteList = async () => {
   if (!listToDelete.value || !props.boardId) return
 
-  console.log('handleDeleteList called with boardId:', props.boardId, 'and listId:', listToDelete.value)
+  // Optimistic update
+  const deletedList = listStore.removeList(listToDelete.value)
+
   try {
     await listStore.deleteList(props.boardId, listToDelete.value)
-    console.log('List deleted successfully')
-    // You can use a toast notification library here if you have one
   } catch (error) {
     console.error('Error deleting list:', error)
-    // You can use a toast notification library here if you have one
+    if (deletedList) listStore.addList(deletedList)
   } finally {
     showDeleteConfirm.value = false
     listToDelete.value = null
@@ -154,7 +157,6 @@ const cancelDelete = () => {
     <p v-if="loading">Loading lists...</p>
     <p v-else-if="error">Error: {{ error }}</p>
     <template v-else>
-      <p>Number of lists: {{ sortedLists.length }}</p>
       <draggable
           :list="sortedLists"
           item-key="id"
