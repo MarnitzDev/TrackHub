@@ -22,8 +22,8 @@ const route = useRoute()
 const { lists, loading, error } = storeToRefs(listStore)
 
 // Computed Properties
-const safeLists = computed(() => {
-  return Array.isArray(lists.value) ? lists.value : []
+const sortedLists = computed(() => {
+  return [...listStore.sortedLists]
 })
 
 // Lifecycle Hooks
@@ -40,13 +40,14 @@ onMounted(async () => {
 const handleListChange = async (event: any) => {
   console.log('List change event:', event);
   if (event.moved) {
-    const newOrder = safeLists.value.map((list, index) => ({ id: list.id, order: index }));
+    const newOrder = sortedLists.value.map((list, index) => ({ id: list.id, order: index }));
     console.log('New list order:', newOrder);
     try {
       await listStore.reorderLists(props.boardId, newOrder);
       console.log('Lists reordered successfully');
     } catch (error) {
       console.error('Error reordering lists:', error);
+      // Fetch lists again to ensure correct order
       await listStore.fetchLists(props.boardId);
     }
   }
@@ -66,7 +67,8 @@ const handleEditList = async (listId: string, updatedData: Partial<List>) => {
 const handleCreateCard = async (listId: string, cardData: Partial<Card>) => {
   console.log('handleCreateCard called with listId:', listId, 'and cardData:', cardData);
   try {
-    await cardStore.createCard({ ...cardData, listId })
+    const newCard = await cardStore.createCard({ ...cardData, listId })
+    listStore.addCardToList(listId, newCard)
     console.log('Card created successfully')
   } catch (error) {
     console.error('Error creating card:', error)
@@ -87,6 +89,7 @@ const handleDeleteCard = async (cardId: string, listId: string) => {
   console.log('handleDeleteCard called with cardId:', cardId, 'and listId:', listId);
   try {
     await cardStore.deleteCard(cardId)
+    listStore.removeCardFromList(cardId)
     console.log('Card deleted successfully')
   } catch (error) {
     console.error('Error deleting card:', error)
@@ -96,7 +99,7 @@ const handleDeleteCard = async (cardId: string, listId: string) => {
 const handleReorderCards = async (listId: string, cardIds: string[]) => {
   console.log('handleReorderCards called with listId:', listId, 'and cardIds:', cardIds);
   try {
-    await cardStore.reorderCards(listId, cardIds)
+    await listStore.reorderCards(listId, cardIds)
     console.log('Cards reordered successfully')
   } catch (error) {
     console.error('Error reordering cards:', error)
@@ -107,6 +110,7 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
   console.log('handleMoveCard called with payload:', payload);
   try {
     await cardStore.moveCard(payload)
+    listStore.moveCard(payload)
     console.log('Card moved successfully')
   } catch (error) {
     console.error('Error moving card:', error)
@@ -150,9 +154,9 @@ const cancelDelete = () => {
     <p v-if="loading">Loading lists...</p>
     <p v-else-if="error">Error: {{ error }}</p>
     <template v-else>
-      <p>Number of lists: {{ safeLists.length }}</p>
+      <p>Number of lists: {{ sortedLists.length }}</p>
       <draggable
-          v-model="safeLists"
+          :list="sortedLists"
           item-key="id"
           class="flex space-x-4 overflow-x-auto"
           handle=".list-handle"

@@ -1,3 +1,4 @@
+
 import { defineStore } from 'pinia'
 import { List, Card } from '@prisma/client'
 import { useBoardStore } from './boardStore'
@@ -12,71 +13,57 @@ export const useListStore = defineStore('list', {
         loading: false,
         error: null as string | null,
     }),
+    getters: {
+        sortedLists: (state) => [...state.lists].sort((a, b) => a.order - b.order),
+    },
     actions: {
-        /**
-         * Fetches lists for a specific board.
-         * @param boardId - The ID of the board to fetch lists for.
-         */
         async fetchLists(boardId: string) {
-            console.log("listStore: fetchLists, boardId:", boardId);
             if (!boardId) {
                 console.error("fetchLists called with undefined boardId");
                 this.error = "Invalid board ID";
                 return;
             }
-            this.loading = true
-            this.error = null
+            this.loading = true;
+            this.error = null;
             try {
                 const data = await $fetch(`/api/boards/${boardId}/lists`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
                     }
-                })
-                console.log("API response:", data)
-                this.lists = Array.isArray(data) ? data : []
+                });
+                this.lists = Array.isArray(data) ? data : [];
             } catch (e: any) {
-                console.error('Error fetching lists:', e)
-                this.error = e.message
+                console.error('Error fetching lists:', e);
+                this.error = e.message;
             } finally {
-                this.loading = false
+                this.loading = false;
             }
         },
 
-        /**
-         * Creates a new list.
-         * @param listData - Partial data for the new list.
-         * @returns The newly created list with cards.
-         */
         async createList(listData: Partial<List>) {
             try {
-                const boardId = listData.boardId // Make sure this is included in the listData
+                const boardId = listData.boardId;
                 const data = await $fetch(`/api/boards/${boardId}/lists`, {
                     method: 'POST',
                     body: listData
-                })
+                });
 
-                const newList: ListWithCards = { ...data, cards: [] }
-                this.lists.push(newList)
+                const newList: ListWithCards = { ...data, cards: [] };
+                this.lists.push(newList);
 
-                const boardStore = useBoardStore()
+                const boardStore = useBoardStore();
                 if (boardStore) {
-                    boardStore.addListToCurrentBoard(newList)
+                    boardStore.addListToCurrentBoard(newList);
                 }
 
-                console.log('New list created:', newList)
-                return newList
+                return newList;
             } catch (e: any) {
-                console.error('Error creating list:', e)
-                throw e
+                console.error('Error creating list:', e);
+                throw e;
             }
         },
 
-        /**
-         * Edits an existing list.
-         * @param listId - The ID of the list to edit.
-         * @param updatedData - The updated data for the list.
-         */
         async editList(boardId: string, listId: string, updatedData: Partial<List>) {
             try {
                 if (typeof listId !== 'string') {
@@ -85,22 +72,17 @@ export const useListStore = defineStore('list', {
                 const updatedList = await $fetch(`/api/boards/${boardId}/lists/${listId}`, {
                     method: 'PUT',
                     body: updatedData
-                })
-                const index = this.lists.findIndex(list => list.id === listId)
+                });
+                const index = this.lists.findIndex(list => list.id === listId);
                 if (index !== -1) {
-                    this.lists[index] = { ...this.lists[index], ...updatedList }
+                    this.lists[index] = { ...this.lists[index], ...updatedList };
                 }
             } catch (error) {
-                console.error('Error editing list:', error)
-                throw error
+                console.error('Error editing list:', error);
+                throw error;
             }
         },
 
-        /**
-         * Deletes a list.
-         * @param boardId - The ID of the board containing the list.
-         * @param listId - The ID of the list to delete.
-         */
         async deleteList(boardId: string, listId: string) {
             if (!boardId || !listId) {
                 console.error('deleteList called with undefined boardId or listId');
@@ -109,81 +91,99 @@ export const useListStore = defineStore('list', {
             try {
                 await $fetch(`/api/boards/${boardId}/lists/${listId}`, {
                     method: 'DELETE'
-                })
-                this.lists = this.lists.filter(l => l.id !== listId)
+                });
+                this.lists = this.lists.filter(l => l.id !== listId);
             } catch (e: any) {
-                console.error('Error deleting list:', e)
-                throw e
+                console.error('Error deleting list:', e);
+                throw e;
             }
         },
 
-        /**
-         * Reorders lists within a board.
-         * @param boardId - The ID of the board containing the lists.
-         * @param listIds - An array of list IDs in their new order.
-         */
         async reorderLists(boardId: string, newOrder: { id: string, order: number }[]) {
             if (!boardId) {
                 console.error('reorderLists called with undefined boardId');
                 throw new Error('Invalid board ID');
             }
             try {
-                await $fetch(`/api/boards/${boardId}/reorder-lists`, {
-                    method: 'PUT',
-                    body: { listOrder: newOrder }
+                const updatedLists = await $fetch(`/api/boards/${boardId}/reorder`, {
+                    method: 'POST',
+                    body: { listIds: newOrder.map(item => item.id) }
                 });
 
-                // Update the local state to reflect the new order
-                this.lists = this.lists.map(list => {
-                    const updatedList = newOrder.find(item => item.id === list.id);
-                    return updatedList ? { ...list, order: updatedList.order } : list;
-                }).sort((a, b) => a.order - b.order);
+                if (Array.isArray(updatedLists)) {
+                    this.updateListOrder(updatedLists);
+                } else {
+                    throw new Error('Unexpected server response format');
+                }
             } catch (error) {
                 console.error('Error reordering lists:', error);
+                if (error.response) {
+                    console.error('Error response:', await error.response.text());
+                }
+                await this.fetchLists(boardId);
                 throw error;
             }
         },
 
-        /**
-         * Adds a card to a specific list.
-         * @param listId - The ID of the list to add the card to.
-         * @param card - The card to be added.
-         */
+        updateListOrder(newOrder: { id: string, order: number }[]) {
+            this.lists = newOrder.map(item => {
+                const list = this.lists.find(l => l.id === item.id);
+                return { ...list, order: item.order } as ListWithCards;
+            });
+        },
+
         addCardToList(listId: string, card: Card) {
-            const list = this.lists.find(l => l.id === listId)
+            const list = this.lists.find(l => l.id === listId);
             if (list) {
                 if (!Array.isArray(list.cards)) {
-                    list.cards = []
+                    list.cards = [];
                 }
-                list.cards.push(card)
-                this.lists = [...this.lists]
+                list.cards.push(card);
+                this.lists = [...this.lists];
             }
         },
 
-        /**
-         * Removes a card from a specific list.
-         * @param cardId - The ID of the card to be removed.
-         */
         removeCardFromList(cardId: string) {
             this.lists.forEach(list => {
-                list.cards = list.cards.filter(c => c.id !== cardId)
-            })
+                list.cards = list.cards.filter(c => c.id !== cardId);
+            });
         },
 
-        /**
-         * Moves a card from one list to another.
-         * @param params - Object containing cardId, fromListId, toListId, and newIndex.
-         */
         moveCard({ cardId, fromListId, toListId, newIndex }: { cardId: string, fromListId: string, toListId: string, newIndex: number }) {
-            const fromList = this.lists.find(l => l.id === fromListId)
-            const toList = this.lists.find(l => l.id === toListId)
+            const fromList = this.lists.find(l => l.id === fromListId);
+            const toList = this.lists.find(l => l.id === toListId);
             if (fromList && toList) {
-                const card = fromList.cards.find(c => c.id === cardId)
+                const card = fromList.cards.find(c => c.id === cardId);
                 if (card) {
-                    fromList.cards = fromList.cards.filter(c => c.id !== cardId)
-                    toList.cards.splice(newIndex, 0, card)
+                    fromList.cards = fromList.cards.filter(c => c.id !== cardId);
+                    toList.cards.splice(newIndex, 0, card);
+                }
+            }
+        },
+
+        async reorderCards(listId: string, newOrder: string[]) {
+            const list = this.lists.find(l => l.id === listId);
+            if (list) {
+                try {
+                    const updatedCards = await $fetch(`/api/lists/${listId}/reorder`, {
+                        method: 'POST',
+                        body: { cardIds: newOrder }
+                    });
+
+                    if (Array.isArray(updatedCards)) {
+                        list.cards = updatedCards.map(updatedCard => ({
+                            ...list.cards.find(c => c.id === updatedCard.id),
+                            ...updatedCard
+                        }));
+                        this.lists = [...this.lists];
+                    } else {
+                        throw new Error('Unexpected server response format');
+                    }
+                } catch (error) {
+                    console.error('Error reordering cards:', error);
+                    throw error;
                 }
             }
         },
     },
-})
+});
