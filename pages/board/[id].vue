@@ -348,7 +348,7 @@ const updateCard = async () => {
 
     <!-- Create List Modal -->
     <UModal :open="showCreateListModal">
-      <template #body>
+      <template #content>
         <div class="p-4">
           <h2 class="text-2xl font-bold mb-4">Create New List</h2>
           <form @submit.prevent="createList">

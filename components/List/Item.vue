@@ -150,7 +150,7 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 
     <!-- Edit List Modal -->
     <UModal :open="isEditModalOpen">
-      <template #body>
+      <template #content>
         <div class="p-4">
           <h3 class="text-lg font-semibold mb-4">Edit List Title</h3>
           <UInput
@@ -175,7 +175,7 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 
     <!-- Delete Confirmation Modal -->
     <UModal :open="showDeleteConfirm">
-      <template #body>
+      <template #content>
         <div class="p-4">
           <h3 class="text-lg font-semibold mb-2">Confirm Delete</h3>
           <p>Are you sure you want to delete this list?</p>
