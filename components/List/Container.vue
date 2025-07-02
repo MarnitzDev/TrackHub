@@ -46,8 +46,17 @@ onMounted(async () => {
 const handleListChange = async (event: any) => {
   console.log('List change event:', event);
   if (event.moved) {
-    console.log('Lists reordered:', safeLists.value.map(list => ({ id: list.id, title: list.title })));
-    await listStore.reorderLists(props.boardId, safeLists.value.map(list => list.id))
+    const newOrder = safeLists.value.map((list, index) => ({ id: list.id, order: index }));
+    console.log('New list order:', newOrder);
+    try {
+      // Use props.boardId instead of route.params.id
+      await listStore.reorderLists(props.boardId, newOrder);
+      console.log('Lists reordered successfully');
+    } catch (error) {
+      console.error('Error reordering lists:', error);
+      // Optionally, revert the change in the UI
+      await listStore.fetchLists(props.boardId);
+    }
   }
 }
 

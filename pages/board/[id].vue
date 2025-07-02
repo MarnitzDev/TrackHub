@@ -332,6 +332,7 @@ const updateCard = async () => {
       <ListContainer
           v-if="board.lists"
           :board="board"
+          :boardId="$route.params.id"
           :lists="board.lists"
           @createCard="openCreateCardModal"
           @editCard="editCard"

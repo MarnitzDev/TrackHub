@@ -113,16 +113,25 @@ export const useListStore = defineStore('list', {
          * @param boardId - The ID of the board containing the lists.
          * @param listIds - An array of list IDs in their new order.
          */
-        async reorderLists(boardId: string, listIds: string[]) {
+        async reorderLists(boardId: string, newOrder: { id: string, order: number }[]) {
+            if (!boardId) {
+                console.error('reorderLists called with undefined boardId');
+                throw new Error('Invalid board ID');
+            }
             try {
                 await $fetch(`/api/boards/${boardId}/reorder-lists`, {
                     method: 'PUT',
-                    body: { listIds }
-                })
-                this.lists = listIds.map(id => this.lists.find(l => l.id === id)!).filter(Boolean)
-            } catch (e: any) {
-                console.error('Error reordering lists:', e)
-                throw e
+                    body: { listOrder: newOrder }
+                });
+
+                // Update the local state to reflect the new order
+                this.lists = this.lists.map(list => {
+                    const updatedList = newOrder.find(item => item.id === list.id);
+                    return updatedList ? { ...list, order: updatedList.order } : list;
+                }).sort((a, b) => a.order - b.order);
+            } catch (error) {
+                console.error('Error reordering lists:', error);
+                throw error;
             }
         },
 
