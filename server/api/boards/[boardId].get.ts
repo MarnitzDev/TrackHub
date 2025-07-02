@@ -1,12 +1,11 @@
-
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
-    const id = event.context.params?.id
+    const boardId = event.context.params?.boardId
 
-    if (!id) {
+    if (!boardId) {
         throw createError({
             statusCode: 400,
             statusMessage: 'Board ID is required'
@@ -15,7 +14,7 @@ export default defineEventHandler(async (event) => {
 
     try {
         const board = await prisma.board.findUnique({
-            where: { id },
+            where: { id: boardId },
             include: {
                 lists: {
                     include: {

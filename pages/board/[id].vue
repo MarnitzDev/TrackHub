@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Board, List, Card } from '@prisma/client'
 import ListContainer from '~/components/List/Container.vue'
 import { useBoardStore } from '~/stores/boardStore'
 import { useListStore } from '~/stores/listStore'
-// import { useToast } from '@nuxt/ui'
+import { useRoute } from 'vue-router'
 
 // Stores
-// -----------------------------
 const boardStore = useBoardStore()
 const listStore = useListStore()
 
 // Types
-// -----------------------------
 interface ListWithCards extends List {
   cards: Card[]
 }
@@ -22,22 +20,18 @@ interface BoardWithLists extends Board {
 }
 
 // Route and Data Fetching
-// -----------------------------
 const route = useRoute()
-const boardId = route.params.id as string
+const boardId = computed(() => route.params.id as string)
 
-const { data: board, refresh } = await useFetch<BoardWithLists>(`/api/boards/${boardId}`)
+const { data: board, refresh } = await useFetch<BoardWithLists>(() => `/api/boards/${boardId.value}`)
 
 // State
-// -----------------------------
 const showCreateListModal = ref(false)
 const newListTitle = ref('')
-
 const showCreateCardModal = ref(false)
 const newCardTitle = ref('')
 const newCardDescription = ref('')
 const activeListId = ref<string | null>(null)
-
 const editingCard = ref<Card | null>(null)
 
 const backgroundImageUrl = computed(() => {
@@ -47,63 +41,47 @@ const backgroundImageUrl = computed(() => {
   return null
 })
 
-//=============================================================================
-// List Management
-//=============================================================================
+// Watchers
+watch(boardId, async () => {
+  await refresh()
+}, { immediate: true })
 
+// List Management
 const createList = async () => {
-  const newListOrder = board.value?.lists.length || 0
+  if (!board.value) return
+
+  const newListOrder = board.value.lists.length
   try {
-    const newList = await $fetch(`/api/lists`, {
+    const newList = await $fetch('/api/lists', {
       method: 'POST',
       body: {
         title: newListTitle.value,
-        boardId,
+        boardId: boardId.value,
         order: newListOrder
       }
     })
 
-    // Add the new list to the current board in the store
-    boardStore.addListToCurrentBoard(newList)
-
-    // Optionally, you can also update the listStore
-    await listStore.fetchLists(boardId)
-
-    // Update the local board data
-    if (board.value) {
-      if (!Array.isArray(board.value.lists)) {
-        board.value.lists = []
-      }
-      board.value.lists.push(newList)
-    }
-
+    board.value.lists.push(newList)
     showCreateListModal.value = false
     newListTitle.value = ''
   } catch (error) {
     console.error('Error creating list:', error)
-    // Handle error (e.g., show error message to user)
   }
 }
 
 const reorderLists = async (newOrder: string[]) => {
-  console.log('Reordering lists:', newOrder);
   try {
-    await $fetch(`/api/boards/${boardId}/reorder-lists`, {
+    await $fetch(`/api/boards/${boardId.value}/reorder-lists`, {
       method: 'PUT',
       body: { listIds: newOrder }
-    });
-    console.log('Lists reordered successfully');
-    await refresh();
+    })
+    await refresh()
   } catch (error) {
-    console.error('Error reordering lists:', error);
-    // Handle error (e.g., show toast notification)
+    console.error('Error reordering lists:', error)
   }
 }
 
-//=============================================================================
 // Card Management
-//=============================================================================
-
 const openCreateCardModal = (listId: string) => {
   activeListId.value = listId
   editingCard.value = null
@@ -113,7 +91,6 @@ const openCreateCardModal = (listId: string) => {
 }
 
 const updateCardList = async ({ cardId, fromListId, toListId, newIndex }) => {
-  console.log("updateCardList", { cardId, fromListId, toListId, newIndex });
   if (!board.value) return
 
   // Optimistic update
@@ -122,51 +99,28 @@ const updateCardList = async ({ cardId, fromListId, toListId, newIndex }) => {
   const card = oldList?.cards.find(c => c.id === cardId)
 
   if (oldList && newList && card) {
-    // Remove card from old list
     oldList.cards = oldList.cards.filter(c => c.id !== cardId)
-
-    // Add card to new list
     const updatedCard = { ...card, listId: toListId, order: newIndex }
     newList.cards.splice(newIndex, 0, updatedCard)
 
-    // Update order of cards in both old and new lists
-    oldList.cards.forEach((c, index) => {
-      c.order = index
-    })
-    newList.cards.forEach((c, index) => {
-      c.order = index
-    })
+    oldList.cards.forEach((c, index) => { c.order = index })
+    newList.cards.forEach((c, index) => { c.order = index })
   }
 
   try {
-    // Update the card on the server
-    const updatedCard = await $fetch(`/api/cards/${cardId}`, {
+    await $fetch(`/api/cards/${cardId}`, {
       method: 'PUT',
-      body: {
-        listId: toListId,
-        order: newIndex
-      }
+      body: { listId: toListId, order: newIndex }
     })
-    console.log("Card updated successfully", updatedCard);
 
-    // Reorder cards in the new list
-    const updatedCardIds = newList?.cards.map(c => c.id) || []
     await $fetch(`/api/lists/${toListId}/reorder`, {
       method: 'PUT',
-      body: { cardIds: updatedCardIds }
+      body: { cardIds: newList?.cards.map(c => c.id) }
     })
-    console.log("List reordered successfully");
 
-    // Refresh the board data to ensure consistency
     await refresh()
-
   } catch (error) {
     console.error('Error updating card list:', error)
-    // useToast().add({
-    //   title: 'Error',
-    //   description: 'Failed to update card position. Changes will be reverted.',
-    //   color: 'red'
-    // })
     await refresh()
   }
 }
@@ -174,7 +128,6 @@ const updateCardList = async ({ cardId, fromListId, toListId, newIndex }) => {
 const reorderCards = async ({ listId, cardIds }) => {
   if (!board.value) return
 
-  // Optimistic update
   const list = board.value.lists.find(l => l.id === listId)
   if (list) {
     list.cards = cardIds.map((id, index) => {
@@ -190,11 +143,6 @@ const reorderCards = async ({ listId, cardIds }) => {
     })
   } catch (error) {
     console.error('Error reordering cards:', error)
-    // useToast().add({
-    //   title: 'Error',
-    //   description: 'Failed to reorder cards. Changes will be reverted.',
-    //   color: 'red'
-    // })
     await refresh()
   }
 }
@@ -210,39 +158,30 @@ const editCard = (card: Card) => {
 const deleteCard = async (cardId: string) => {
   if (!board.value) return
 
-  // Optimistic update
   const list = board.value.lists.find(l => l.cards.some(c => c.id === cardId))
   if (list) {
     list.cards = list.cards.filter(c => c.id !== cardId)
   }
 
   try {
-    await $fetch(`/api/cards/${cardId}`, {
-      method: 'DELETE'
-    })
+    await $fetch(`/api/cards/${cardId}`, { method: 'DELETE' })
   } catch (error) {
     console.error('Error deleting card:', error)
-    // useToast().add({
-    //   title: 'Error',
-    //   description: 'Failed to delete card. Changes will be reverted.',
-    //   color: 'red'
-    // })
     await refresh()
   }
 }
 
 const createCard = async () => {
-  if (!activeListId.value) return
+  if (!activeListId.value || !board.value) return
 
   const newCard = {
     title: newCardTitle.value,
     description: newCardDescription.value,
     listId: activeListId.value,
-    order: board.value?.lists.find(l => l.id === activeListId.value)?.cards.length || 0
+    order: board.value.lists.find(l => l.id === activeListId.value)?.cards.length || 0
   }
 
-  // Optimistic update
-  const list = board.value?.lists.find(l => l.id === activeListId.value)
+  const list = board.value.lists.find(l => l.id === activeListId.value)
   if (list) {
     list.cards.push({ ...newCard, id: 'temp-id-' + Date.now() } as Card)
   }
@@ -253,7 +192,6 @@ const createCard = async () => {
       body: newCard
     })
 
-    // Update the temporary card with the real one
     if (list) {
       const index = list.cards.findIndex(c => c.id === 'temp-id-' + Date.now())
       if (index !== -1) {
@@ -262,11 +200,6 @@ const createCard = async () => {
     }
   } catch (error) {
     console.error('Error creating card:', error)
-    // useToast().add({
-    //   title: 'Error',
-    //   description: 'Failed to create card. Changes will be reverted.',
-    //   color: 'red'
-    // })
     await refresh()
   }
 
@@ -277,7 +210,7 @@ const createCard = async () => {
 }
 
 const updateCard = async () => {
-  if (!editingCard.value) return
+  if (!editingCard.value || !board.value) return
 
   const updatedCard = {
     ...editingCard.value,
@@ -285,8 +218,7 @@ const updateCard = async () => {
     description: newCardDescription.value
   }
 
-  // Optimistic update
-  const list = board.value?.lists.find(l => l.id === editingCard.value?.listId)
+  const list = board.value.lists.find(l => l.id === editingCard.value?.listId)
   if (list) {
     const index = list.cards.findIndex(c => c.id === editingCard.value?.id)
     if (index !== -1) {
@@ -301,11 +233,6 @@ const updateCard = async () => {
     })
   } catch (error) {
     console.error('Error updating card:', error)
-    // useToast().add({
-    //   title: 'Error',
-    //   description: 'Failed to update card. Changes will be reverted.',
-    //   color: 'red'
-    // })
     await refresh()
   }
 
@@ -332,7 +259,7 @@ const updateCard = async () => {
       <ListContainer
           v-if="board.lists"
           :board="board"
-          :boardId="$route.params.id"
+          :boardId="boardId"
           :lists="board.lists"
           @createCard="openCreateCardModal"
           @editCard="editCard"

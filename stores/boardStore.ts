@@ -38,8 +38,10 @@ export const useBoardStore = defineStore('board', {
                 if (e.statusCode === 400 && e.statusMessage === 'Board ID is required') {
                     // This error suggests there are no boards, so we'll set an empty array
                     this.boards = []
+                } else if (e.name === 'FetchError') {
+                    this.error = 'Network error. Please check your connection and try again.'
                 } else {
-                    this.error = e.message
+                    this.error = e.message || 'An unexpected error occurred'
                 }
             } finally {
                 this.loading = false
