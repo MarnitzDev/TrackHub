@@ -6,10 +6,6 @@ import { useBoardStore } from '~/stores/boardStore'
 import { useListStore } from '~/stores/listStore'
 import { useRoute } from 'vue-router'
 
-// Stores
-const boardStore = useBoardStore()
-const listStore = useListStore()
-
 // Types
 interface ListWithCards extends List {
   cards: Card[]
@@ -19,11 +15,30 @@ interface BoardWithLists extends Board {
   lists: ListWithCards[]
 }
 
+// Stores
+const boardStore = useBoardStore()
+const listStore = useListStore()
+
 // Route and Data Fetching
 const route = useRoute()
 const boardId = computed(() => route.params.id as string)
 
-const { data: board, refresh } = await useFetch<BoardWithLists>(() => `/api/boards/${boardId.value}`)
+const { data: board, refresh, error: fetchError } = await useFetch<BoardWithLists>(() => `/api/boards/${boardId.value}`, {
+  onResponseError({ response }) {
+    console.error('Error fetching board:', response.statusText)
+  }
+})
+
+// Error handling
+const error = ref<string | null>(null)
+watch(fetchError, (newError) => {
+  if (newError) {
+    console.error('Error fetching board:', newError)
+    error.value = 'Failed to load board data. Please try again later.'
+  } else {
+    error.value = null
+  }
+})
 
 // State
 const showCreateListModal = ref(false)
@@ -52,16 +67,16 @@ const createList = async () => {
 
   const newListOrder = board.value.lists.length
   try {
-    const newList = await $fetch('/api/lists', {
-      method: 'POST',
-      body: {
-        title: newListTitle.value,
-        boardId: boardId.value,
-        order: newListOrder
-      }
+    const newList = await listStore.createList({
+      title: newListTitle.value,
+      boardId: boardId.value,
+      order: newListOrder
     })
 
-    board.value.lists.push(newList)
+    if (board.value) {
+      board.value.lists.push(newList)
+    }
+
     showCreateListModal.value = false
     newListTitle.value = ''
   } catch (error) {
@@ -244,8 +259,11 @@ const updateCard = async () => {
 </script>
 
 <template>
+  <div v-if="error" class="error-message p-4 bg-red-100 text-red-700 rounded">
+    {{ error }}
+  </div>
   <div
-      v-if="board"
+      v-else-if="board"
       class="min-h-screen"
       :style="backgroundImageUrl ? `background-image: url(${backgroundImageUrl}); background-size: cover; background-position: center; background-attachment: fixed;` : ''"
   >
@@ -306,5 +324,8 @@ const updateCard = async () => {
         </div>
       </template>
     </UModal>
+  </div>
+  <div v-else class="loading p-4 text-center">
+    Loading...
   </div>
 </template>

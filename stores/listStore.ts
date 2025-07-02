@@ -50,7 +50,8 @@ export const useListStore = defineStore('list', {
          */
         async createList(listData: Partial<List>) {
             try {
-                const data = await $fetch('/api/lists', {
+                const boardId = listData.boardId // Make sure this is included in the listData
+                const data = await $fetch(`/api/boards/${boardId}/lists`, {
                     method: 'POST',
                     body: listData
                 })
