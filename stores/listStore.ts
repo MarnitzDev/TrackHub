@@ -98,11 +98,16 @@ export const useListStore = defineStore('list', {
 
         /**
          * Deletes a list.
+         * @param boardId - The ID of the board containing the list.
          * @param listId - The ID of the list to delete.
          */
-        async deleteList(listId: string) {
+        async deleteList(boardId: string, listId: string) {
+            if (!boardId || !listId) {
+                console.error('deleteList called with undefined boardId or listId');
+                throw new Error('Invalid board ID or list ID');
+            }
             try {
-                await $fetch(`/api/lists/${listId}`, {
+                await $fetch(`/api/boards/${boardId}/lists/${listId}`, {
                     method: 'DELETE'
                 })
                 this.lists = this.lists.filter(l => l.id !== listId)

@@ -123,11 +123,11 @@ const handleDeleteListRequest = (listId: string) => {
 }
 
 const handleDeleteList = async () => {
-  if (!listToDelete.value) return
+  if (!listToDelete.value || !props.boardId) return
 
-  console.log('handleDeleteList called with listId:', listToDelete.value)
+  console.log('handleDeleteList called with boardId:', props.boardId, 'and listId:', listToDelete.value)
   try {
-    await listStore.deleteList(listToDelete.value)
+    await listStore.deleteList(props.boardId, listToDelete.value)
     console.log('List deleted successfully')
     // You can use a toast notification library here if you have one
   } catch (error) {

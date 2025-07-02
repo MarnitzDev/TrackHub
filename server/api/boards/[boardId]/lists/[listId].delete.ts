@@ -13,12 +13,13 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    const listId = event.context.params?.id
+    const boardId = event.context.params?.boardId
+    const listId = event.context.params?.listId
 
-    if (!listId) {
+    if (!boardId || !listId) {
         throw createError({
             statusCode: 400,
-            statusMessage: 'List ID is required'
+            statusMessage: 'Board ID and List ID are required'
         })
     }
 
@@ -30,7 +31,10 @@ export default defineEventHandler(async (event) => {
 
         // Then, delete the list itself
         const deletedList = await prisma.list.delete({
-            where: { id: listId }
+            where: {
+                id: listId,
+                boardId: boardId // Ensure the list belongs to the specified board
+            }
         })
 
         return { message: 'List and associated cards deleted successfully', deletedList }

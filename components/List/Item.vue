@@ -44,16 +44,16 @@ const saveListTitle = async () => {
 }
 
 const confirmDelete = async () => {
+  if (!props.boardId || !props.list.id) {
+    console.error('Missing boardId or listId');
+    return;
+  }
   try {
-    isDeleting.value = true
-    await listStore.deleteList(props.list.id)
-    // Optionally handle successful deletion (e.g., show a success message)
+    await listStore.deleteList(props.boardId, props.list.id)
+    // Handle successful deletion
   } catch (error) {
     console.error('Error deleting list:', error)
-    // Handle error (e.g., show an error message)
-  } finally {
-    isDeleting.value = false
-    showDeleteConfirm.value = false
+    // Handle error
   }
 }
 
