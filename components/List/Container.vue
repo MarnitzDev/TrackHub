@@ -22,39 +22,31 @@ const route = useRoute()
 const { lists, loading, error } = storeToRefs(listStore)
 
 // Computed Properties
-// -----------------------------
 const safeLists = computed(() => {
   return Array.isArray(lists.value) ? lists.value : []
 })
 
 // Lifecycle Hooks
-// -----------------------------
 onMounted(async () => {
-  const boardId = route.params.id as string
-  console.log("Component: Fetching lists for boardId:", boardId)
-  if (boardId) {
-    await listStore.fetchLists(boardId)
+  console.log("Component: Fetching lists for boardId:", props.boardId)
+  if (props.boardId) {
+    await listStore.fetchLists(props.boardId)
   } else {
-    console.error("No boardId available in route params")
+    console.error("No boardId available in props")
   }
 })
 
-//=============================================================================
 // List Management
-//=============================================================================
-
 const handleListChange = async (event: any) => {
   console.log('List change event:', event);
   if (event.moved) {
     const newOrder = safeLists.value.map((list, index) => ({ id: list.id, order: index }));
     console.log('New list order:', newOrder);
     try {
-      // Use props.boardId instead of route.params.id
       await listStore.reorderLists(props.boardId, newOrder);
       console.log('Lists reordered successfully');
     } catch (error) {
       console.error('Error reordering lists:', error);
-      // Optionally, revert the change in the UI
       await listStore.fetchLists(props.boardId);
     }
   }
@@ -63,19 +55,14 @@ const handleListChange = async (event: any) => {
 const handleEditList = async (listId: string, updatedData: Partial<List>) => {
   console.log('handleEditList called with listId:', listId, 'and updatedData:', updatedData);
   try {
-    await listStore.editList(listId, updatedData)
+    await listStore.editList(props.boardId, listId, updatedData)
     console.log('List updated successfully')
-    // The UI will automatically update due to the reactive nature of the store
   } catch (error) {
     console.error('Error updating list:', error)
-    // Handle error (e.g., show an error message to the user)
   }
 }
 
-//=============================================================================
 // Card Management
-//=============================================================================
-
 const handleCreateCard = async (listId: string, cardData: Partial<Card>) => {
   console.log('handleCreateCard called with listId:', listId, 'and cardData:', cardData);
   try {
@@ -83,7 +70,6 @@ const handleCreateCard = async (listId: string, cardData: Partial<Card>) => {
     console.log('Card created successfully')
   } catch (error) {
     console.error('Error creating card:', error)
-    // Handle error (e.g., show an error message to the user)
   }
 }
 
@@ -94,7 +80,6 @@ const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
     console.log('Card updated successfully')
   } catch (error) {
     console.error('Error updating card:', error)
-    // Handle error (e.g., show an error message to the user)
   }
 }
 
@@ -105,7 +90,6 @@ const handleDeleteCard = async (cardId: string, listId: string) => {
     console.log('Card deleted successfully')
   } catch (error) {
     console.error('Error deleting card:', error)
-    // Handle error (e.g., show an error message to the user)
   }
 }
 
@@ -116,7 +100,6 @@ const handleReorderCards = async (listId: string, cardIds: string[]) => {
     console.log('Cards reordered successfully')
   } catch (error) {
     console.error('Error reordering cards:', error)
-    // Handle error (e.g., show an error message to the user)
   }
 }
 
@@ -127,14 +110,10 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
     console.log('Card moved successfully')
   } catch (error) {
     console.error('Error moving card:', error)
-    // Handle error (e.g., show an error message to the user)
   }
 }
 
-//=============================================================================
 // List Deletion
-//=============================================================================
-
 const listToDelete = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
 
@@ -150,10 +129,10 @@ const handleDeleteList = async () => {
   try {
     await listStore.deleteList(listToDelete.value)
     console.log('List deleted successfully')
-    // useToast().add({ title: 'Success', description: 'List deleted successfully', color: 'green' })
+    // You can use a toast notification library here if you have one
   } catch (error) {
     console.error('Error deleting list:', error)
-    // useToast().add({ title: 'Error', description: 'Failed to delete list', color: 'red' })
+    // You can use a toast notification library here if you have one
   } finally {
     showDeleteConfirm.value = false
     listToDelete.value = null
@@ -182,12 +161,13 @@ const cancelDelete = () => {
         <template #item="{ element: list }">
           <ListItem
               :list="list"
-              @createCard="handleCreateCard"
+              :boardId="props.boardId"
+              @createCard="(cardData) => handleCreateCard(list.id, cardData)"
               @editCard="handleEditCard"
-              @deleteCard="handleDeleteCard"
-              @editList="handleEditList"
-              @deleteList="handleDeleteListRequest"
-              @reorderCards="handleReorderCards"
+              @deleteCard="(cardId) => handleDeleteCard(cardId, list.id)"
+              @editList="(updatedData) => handleEditList(list.id, updatedData)"
+              @deleteList="() => handleDeleteListRequest(list.id)"
+              @reorderCards="(cardIds) => handleReorderCards(list.id, cardIds)"
               @moveCard="handleMoveCard"
           />
         </template>

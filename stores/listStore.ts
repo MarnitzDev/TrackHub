@@ -77,9 +77,12 @@ export const useListStore = defineStore('list', {
          * @param listId - The ID of the list to edit.
          * @param updatedData - The updated data for the list.
          */
-        async editList(listId: string, updatedData: Partial<List>) {
+        async editList(boardId: string, listId: string, updatedData: Partial<List>) {
             try {
-                const updatedList = await $fetch(`/api/lists/${listId}`, {
+                if (typeof listId !== 'string') {
+                    throw new Error('Invalid listId: must be a string');
+                }
+                const updatedList = await $fetch(`/api/boards/${boardId}/lists/${listId}`, {
                     method: 'PUT',
                     body: updatedData
                 })

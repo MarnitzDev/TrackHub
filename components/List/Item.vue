@@ -10,7 +10,7 @@ interface Props {
   list: List & { cards: Card[] }
 }
 
-const props = defineProps<Props>()
+const props = defineProps(['list', 'boardId'])
 
 // Stores
 const listStore = useListStore()
@@ -34,7 +34,7 @@ const openEditModal = () => {
 const saveListTitle = async () => {
   if (editedTitle.value.trim() !== '') {
     try {
-      await listStore.editList(props.list.id, { title: editedTitle.value.trim() })
+      await listStore.editList(props.boardId, props.list.id, { title: editedTitle.value.trim() })
       isEditModalOpen.value = false
     } catch (error) {
       console.error('Error updating list title:', error)
