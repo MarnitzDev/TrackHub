@@ -48,14 +48,16 @@ const confirmDelete = async () => {
     console.error('Missing boardId or listId');
     return;
   }
+  isDeleting.value = true;
   try {
-    await listStore.deleteList(props.boardId, props.list.id)
-    // Handle successful deletion
+    await listStore.deleteList(props.boardId, props.list.id);
+    showDeleteConfirm.value = false;
   } catch (error) {
-    console.error('Error deleting list:', error)
-    // Handle error
+    console.error('Error deleting list:', error);
+  } finally {
+    isDeleting.value = false;
   }
-}
+};
 
 const deleteList = async () => {
   try {
