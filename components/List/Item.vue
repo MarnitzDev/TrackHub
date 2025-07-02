@@ -19,6 +19,8 @@ const cardStore = useCardStore()
 // State
 const isEditModalOpen = ref(false)
 const editedTitle = ref(props.list.title)
+const showDeleteConfirm = ref(false)
+const isDeleting = ref(false)
 
 //=============================================================================
 // List Management
@@ -38,6 +40,20 @@ const saveListTitle = async () => {
       console.error('Error updating list title:', error)
       // Handle error (e.g., show an error message)
     }
+  }
+}
+
+const confirmDelete = async () => {
+  try {
+    isDeleting.value = true
+    await listStore.deleteList(props.list.id)
+    // Optionally handle successful deletion (e.g., show a success message)
+  } catch (error) {
+    console.error('Error deleting list:', error)
+    // Handle error (e.g., show an error message)
+  } finally {
+    isDeleting.value = false
+    showDeleteConfirm.value = false
   }
 }
 
@@ -114,7 +130,7 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
         <button @click="openEditModal" class="text-blue-500 hover:text-blue-700">
           <UIcon name="i-lucide-edit" class="w-4 h-4" />
         </button>
-        <button @click="deleteList" class="text-red-500 hover:text-red-700">
+        <button @click="showDeleteConfirm = true" class="text-red-500 hover:text-red-700">
           <UIcon name="i-lucide-trash-2" class="w-4 h-4" />
         </button>
         <span class="list-handle cursor-move">☰</span>
@@ -152,6 +168,20 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
             >
               Save
             </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Delete Confirmation Modal -->
+    <UModal :open="showDeleteConfirm">
+      <template #body>
+        <div class="p-4">
+          <h3 class="text-lg font-semibold mb-2">Confirm Delete</h3>
+          <p>Are you sure you want to delete this list?</p>
+          <div class="mt-4 flex justify-end gap-2">
+            <UButton @click="showDeleteConfirm = false">Cancel</UButton>
+            <UButton color="red" :loading="isDeleting" @click="confirmDelete">Delete</UButton>
           </div>
         </div>
       </template>
