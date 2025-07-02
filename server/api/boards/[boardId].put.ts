@@ -1,55 +1,57 @@
-import { PrismaClient } from '@prisma/client'
-import path from 'path'
+import { PrismaClient, Prisma } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
-    const id = event.context.params?.id
-    const body = await readBody(event)
+    const boardId = event.context.params?.boardId
 
-    console.log('Received update data for board:', body)
-
-    if (!id) {
+    if (!boardId) {
         throw createError({
             statusCode: 400,
             statusMessage: 'Board ID is required'
         })
     }
 
-    if (!body.title && !body.description && body.backgroundImage === undefined) {
+    const body = await readBody(event)
+
+    if (!body || Object.keys(body).length === 0) {
         throw createError({
             statusCode: 400,
-            statusMessage: 'No valid fields to update'
+            statusMessage: 'Request body is required'
         })
     }
 
     try {
-        // Extract only the filename if backgroundImage is provided
-        const backgroundImageName = body.backgroundImage ? path.basename(body.backgroundImage) : undefined
-
         const updatedBoard = await prisma.board.update({
-            where: { id },
+            where: { id: boardId },
             data: {
-                ...(body.title !== undefined && { title: body.title }),
-                ...(body.description !== undefined && { description: body.description }),
-                ...(backgroundImageName !== undefined && { backgroundImage: backgroundImageName }),
-            },
+                title: body.title,
+                description: body.description,
+                backgroundImage: body.backgroundImage,
+                // Add any other fields that can be updated
+            }
         })
 
         return updatedBoard
     } catch (error) {
         console.error('Error updating board:', error)
 
-        if (error.code === 'P2025') {
-            throw createError({
-                statusCode: 404,
-                statusMessage: 'Board not found'
-            })
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            console.error('Prisma error code:', error.code)
+            console.error('Prisma error message:', error.message)
+
+            if (error.code === 'P2025') {
+                throw createError({
+                    statusCode: 404,
+                    statusMessage: 'Board not found'
+                })
+            }
         }
 
         throw createError({
             statusCode: 500,
-            statusMessage: `Error updating board: ${error.message}`
+            statusMessage: 'Error updating board',
+            stack: error instanceof Error ? error.stack : undefined
         })
     }
 })

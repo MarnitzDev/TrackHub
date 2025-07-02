@@ -91,11 +91,25 @@ export const useBoardStore = defineStore('board', {
             this.loading = true
             this.error = null
             try {
-                await $fetch(`/api/boards/${boardData.id}`, {
+                const updatedBoard = await $fetch(`/api/boards/${boardData.id}`, {
                     method: 'PUT',
                     body: boardData
                 })
-                await this.fetchBoards()
+
+                // Update the board in the local state
+                const index = this.boards.findIndex(board => board.id === boardData.id)
+                if (index !== -1) {
+                    this.boards[index] = {
+                        ...this.boards[index],
+                        ...updatedBoard,
+                        backgroundImageUrl: updatedBoard.backgroundImage
+                            ? `/images/board-backgrounds/${updatedBoard.backgroundImage}`
+                            : '/images/board-backgrounds/default.png'
+                    }
+                    // Force reactivity
+                    this.boards = [...this.boards]
+                }
+
                 this.setEditingBoard(null)
             } catch (e: any) {
                 console.error('Error updating board:', e)
@@ -113,16 +127,24 @@ export const useBoardStore = defineStore('board', {
          * @returns A boolean indicating whether the deletion was successful.
          */
         async destroyBoard(id: string): Promise<boolean> {
-            console.log('boardStore: destroyBoard')
+            console.log('boardStore: destroyBoard', id)
+            this.loading = true
+            this.error = null
             try {
                 await $fetch(`/api/boards/${id}`, {
                     method: 'DELETE',
                 })
-                await this.fetchBoards()
+
+                // Remove the board from the local state
+                this.boards = this.boards.filter(board => board.id !== id)
+
                 return true
             } catch (e: any) {
                 console.error('Error deleting board:', e)
+                this.error = e.message
                 return false
+            } finally {
+                this.loading = false
             }
         },
 

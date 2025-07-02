@@ -1,11 +1,11 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
-    const id = event.context.params?.id
+    const boardId = event.context.params?.boardId
 
-    if (!id) {
+    if (!boardId) {
         throw createError({
             statusCode: 400,
             statusMessage: 'Board ID is required'
@@ -14,14 +14,13 @@ export default defineEventHandler(async (event) => {
 
     try {
         const deletedBoard = await prisma.board.delete({
-            where: { id }
+            where: { id: boardId }
         })
 
         return { message: 'Board deleted successfully', deletedBoard }
     } catch (error) {
         console.error('Error deleting board:', error)
 
-        // Add more detailed error logging
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             console.error('Prisma error code:', error.code)
             console.error('Prisma error message:', error.message)
