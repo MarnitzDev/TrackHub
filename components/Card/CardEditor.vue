@@ -1,14 +1,12 @@
+
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useCardStore } from '~/stores/cardStore'
 
-// Props
-// -----------------------------
-const props = defineProps(['cardId'])
-
-// Store
-// -----------------------------
 const cardStore = useCardStore()
+
+const selectedCard = computed(() => cardStore.selectedCard)
+const isCardEditorOpen = computed(() => !!selectedCard.value)
 
 // State
 // -----------------------------
@@ -48,17 +46,13 @@ onMounted(async () => {
     QuillEditor.value = QE
   }
 
-  // Initialize editor content from the store
-  const card = cardStore.cards.find(c => c.id === props.cardId)
-  if (card) {
-    editorContent.value = card.description || ''
-  }
+  initializeEditorContent()
 })
 
 // Watchers
 // -----------------------------
-watch(() => cardStore.selectedCard, (newCard) => {
-  if (newCard && newCard.id === props.cardId) {
+watch(selectedCard, (newCard) => {
+  if (newCard) {
     editorContent.value = newCard.description || ''
   }
 })
@@ -67,24 +61,104 @@ watch(() => cardStore.selectedCard, (newCard) => {
 // Editor Content Management
 //=============================================================================
 
+const initializeEditorContent = () => {
+  if (selectedCard.value) {
+    editorContent.value = selectedCard.value.description || ''
+  }
+}
+
 const updateContent = async (content: string) => {
   editorContent.value = content
-  await cardStore.editCard(props.cardId, { description: content })
+  if (selectedCard.value) {
+    await cardStore.editCard(selectedCard.value.id, { description: content })
+  }
+}
+
+// Debounce function to limit the frequency of updates
+const debounce = (fn: Function, delay: number) => {
+  let timeoutId: NodeJS.Timeout
+  return (...args: any[]) => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => fn(...args), delay)
+  }
+}
+
+// Debounced update function
+const debouncedUpdateContent = debounce(updateContent, 500)
+
+//=============================================================================
+// Card Management
+//=============================================================================
+
+const closeCardEditor = () => {
+  cardStore.closeCard()
+}
+
+const updateCardTitle = (newTitle: string) => {
+  if (selectedCard.value) {
+    cardStore.editCard(selectedCard.value.id, { ...selectedCard.value, title: newTitle })
+  }
+}
+
+const deleteSelectedCard = async () => {
+  if (selectedCard.value) {
+    await cardStore.deleteCard(selectedCard.value.id)
+    closeCardEditor()
+  }
+}
+
+const saveChanges = async () => {
+  if (selectedCard.value) {
+    await cardStore.editCard(selectedCard.value.id, {
+      ...selectedCard.value,
+      description: editorContent.value
+    })
+    closeCardEditor()
+  }
 }
 </script>
 
 <template>
-  <ClientOnly>
-    <component
-        v-if="QuillEditor"
-        :is="QuillEditor"
-        v-model:content="editorContent"
-        :options="quillOptions"
-        contentType="html"
-        @update:content="updateContent"
-    />
-    <p v-else>Loading editor...</p>
-  </ClientOnly>
+  <UModal
+      :open="isCardEditorOpen"
+      @close="closeCardEditor"
+      :ui="{ width: 'max-w-2xl' }"
+  >
+    <template #content>
+      <div v-if="selectedCard" class="p-4 space-y-4">
+        <div class="flex items-center justify-between">
+          <UInput
+              :model-value="selectedCard.title"
+              @update:model-value="updateCardTitle"
+              placeholder="Card title"
+              class="text-xl font-bold"
+          />
+          <UButton color="red" variant="soft" @click="deleteSelectedCard">
+            Delete Card
+          </UButton>
+        </div>
+        <ClientOnly>
+          <component
+              v-if="QuillEditor"
+              :is="QuillEditor"
+              v-model:content="editorContent"
+              :options="quillOptions"
+              contentType="html"
+              @update:content="debouncedUpdateContent"
+          />
+          <p v-else>Loading editor...</p>
+        </ClientOnly>
+        <div class="flex justify-end space-x-2">
+          <UButton color="gray" @click="closeCardEditor">
+            Cancel
+          </UButton>
+          <UButton color="primary" @click="saveChanges">
+            Save Changes
+          </UButton>
+        </div>
+      </div>
+    </template>
+  </UModal>
 </template>
 
 <style>

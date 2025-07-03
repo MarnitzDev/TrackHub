@@ -1,9 +1,10 @@
+
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { Card } from '@prisma/client'
 import CardItem from './Item.vue'
-import CardModal from './CardModal.vue'
+import CardEditor from './CardEditor.vue'
 import { useCardStore } from '~/stores/cardStore'
 import { useListStore } from '~/stores/listStore'
 
@@ -24,8 +25,6 @@ const listStore = useListStore()
 // State
 // -----------------------------
 const localCards = ref<Card[]>(props.cards)
-const isCardModalOpen = ref(false)
-const selectedCard = ref<Card | null>(null)
 
 // Watchers
 // -----------------------------
@@ -54,64 +53,32 @@ const handleCardChange = async (event: any) => {
   }
 }
 
-const openCardModal = (card: Card) => {
-  selectedCard.value = card
-  isCardModalOpen.value = true
-}
-
-const editCard = async (card: Card) => {
-  await cardStore.editCard(card.id, card)
-}
-
-const deleteCard = async (cardId: string) => {
-  await cardStore.deleteCard(cardId)
-}
-
-//=============================================================================
-// Modal Interactions
-//=============================================================================
-
-const handleCardSave = async (updatedCard: Card) => {
-  await cardStore.editCard(updatedCard.id, updatedCard)
-  const index = localCards.value.findIndex(card => card.id === updatedCard.id)
-  if (index !== -1) {
-    localCards.value[index] = updatedCard
-  }
-  isCardModalOpen.value = false
-}
-
-const handleCardDelete = async (cardId: string) => {
-  await cardStore.deleteCard(cardId)
-  isCardModalOpen.value = false
+const openCardEditor = (card: Card) => {
+  cardStore.openCard(card)
 }
 </script>
 
 <template>
-  <draggable
-      v-model="localCards"
-      group="cards"
-      item-key="id"
-      class="space-y-2"
-      ghost-class="ghost-card"
-      drag-class="dragging-card"
-      @change="handleCardChange"
-  >
-    <template #item="{ element: card }">
-      <CardItem
-          :card="card"
-          @edit="editCard"
-          @delete="deleteCard"
-          @open="openCardModal"
-      />
-    </template>
-  </draggable>
+  <div class="relative">
+    <draggable
+        v-model="localCards"
+        group="cards"
+        item-key="id"
+        class="space-y-2"
+        ghost-class="ghost-card"
+        drag-class="dragging-card"
+        @change="handleCardChange"
+    >
+      <template #item="{ element: card }">
+        <CardItem
+            :card="card"
+            @click="openCardEditor(card)"
+        />
+      </template>
+    </draggable>
 
-  <CardModal
-      v-model:isOpen="isCardModalOpen"
-      :card="selectedCard"
-      @save="handleCardSave"
-      @delete="handleCardDelete"
-  />
+    <CardEditor />
+  </div>
 </template>
 
 <style scoped>
