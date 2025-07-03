@@ -32,19 +32,31 @@ export const useCardStore = defineStore('card', {
          */
         async createCard(cardData: Partial<Card>) {
             try {
-                const newCard = await $fetch('/api/cards', {
+                const response = await $fetch('/api/cards', {
                     method: 'POST',
                     body: cardData
                 })
 
-                this.cards.push(newCard)
+                if (response && response.card) {
+                    const newCard = response.card
+                    this.cards.push(newCard)
 
-                const listStore = useListStore()
-                listStore.addCardToList(newCard.listId, newCard)
+                    const listStore = useListStore()
+                    listStore.addCardToList(newCard.listId, newCard)
 
-                return newCard
+                    return newCard
+                } else {
+                    throw new Error('Invalid response from server')
+                }
             } catch (e: any) {
                 console.error('Error creating card:', e)
+                if (e.statusCode === 400) {
+                    // Handle validation errors
+                    throw new Error(e.statusMessage || 'Invalid card data')
+                } else if (e.statusCode === 500) {
+                    // Handle server errors
+                    throw new Error('Server error occurred while creating card')
+                }
                 throw e
             }
         },

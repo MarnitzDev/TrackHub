@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { ref } from 'vue'
 import { List, Card } from '@prisma/client'
@@ -8,9 +9,10 @@ import { useCardStore } from '~/stores/cardStore'
 // Props
 interface Props {
   list: List & { cards: Card[] }
+  boardId: string
 }
 
-const props = defineProps(['list', 'boardId'])
+const props = defineProps<Props>()
 
 // Stores
 const listStore = useListStore()
@@ -21,6 +23,8 @@ const isEditModalOpen = ref(false)
 const editedTitle = ref(props.list.title)
 const showDeleteConfirm = ref(false)
 const isDeleting = ref(false)
+const isAddingCard = ref(false)
+const newCardTitle = ref('')
 
 //=============================================================================
 // List Management
@@ -45,27 +49,17 @@ const saveListTitle = async () => {
 
 const confirmDelete = async () => {
   if (!props.boardId || !props.list.id) {
-    console.error('Missing boardId or listId');
-    return;
+    console.error('Missing boardId or listId')
+    return
   }
-  isDeleting.value = true;
+  isDeleting.value = true
   try {
-    await listStore.deleteList(props.boardId, props.list.id);
-    showDeleteConfirm.value = false;
-  } catch (error) {
-    console.error('Error deleting list:', error);
-  } finally {
-    isDeleting.value = false;
-  }
-};
-
-const deleteList = async () => {
-  try {
-    await listStore.deleteList(props.list.id)
-    // Optionally handle successful deletion (e.g., show a success message)
+    await listStore.deleteList(props.boardId, props.list.id)
+    showDeleteConfirm.value = false
   } catch (error) {
     console.error('Error deleting list:', error)
-    // Handle error (e.g., show an error message)
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -73,9 +67,18 @@ const deleteList = async () => {
 // Card Management
 //=============================================================================
 
+const showAddCardInput = () => {
+  isAddingCard.value = true
+  newCardTitle.value = ''
+}
+
 const handleCreateCard = async () => {
+  if (newCardTitle.value.trim() === '') return
+
   try {
-    await cardStore.createCard({ title: 'New Card', listId: props.list.id })
+    await cardStore.createCard({ title: newCardTitle.value.trim(), listId: props.list.id })
+    newCardTitle.value = ''
+    isAddingCard.value = false
     // Optionally handle successful card creation (e.g., show a success message)
   } catch (error) {
     console.error('Error creating card:', error)
@@ -83,9 +86,14 @@ const handleCreateCard = async () => {
   }
 }
 
+const cancelAddCard = () => {
+  isAddingCard.value = false
+  newCardTitle.value = ''
+}
+
 const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
   try {
-    await cardStore.updateCard({ id: cardId, ...updatedData })
+    await cardStore.editCard(cardId, updatedData)
     // Optionally handle successful card update (e.g., show a success message)
   } catch (error) {
     console.error('Error updating card:', error)
@@ -138,6 +146,7 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
         <span class="list-handle cursor-move">☰</span>
       </div>
     </div>
+
     <CardContainer
         :cards="list.cards"
         :listId="list.id"
@@ -146,7 +155,37 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
         @reorderCards="handleReorderCards"
         @moveCard="handleMoveCard"
     />
-    <button @click="handleCreateCard" class="w-full text-left p-2 text-gray-600 hover:bg-gray-200 rounded mt-2">
+
+    <div v-if="isAddingCard" class="mt-2">
+      <textarea
+          v-model="newCardTitle"
+          class="w-full p-2 border rounded resize-none"
+          placeholder="Enter a title for this card..."
+          rows="3"
+          @keydown.enter.prevent="handleCreateCard"
+      ></textarea>
+      <div class="flex justify-between mt-2">
+        <UButton
+            color="primary"
+            size="sm"
+            @click="handleCreateCard"
+        >
+          Add Card
+        </UButton>
+        <UButton
+            color="gray"
+            size="sm"
+            @click="cancelAddCard"
+        >
+          Cancel
+        </UButton>
+      </div>
+    </div>
+    <button
+        v-else
+        @click="showAddCardInput"
+        class="w-full text-left p-2 text-gray-600 hover:bg-gray-200 rounded mt-2"
+    >
       + Add a card
     </button>
 
