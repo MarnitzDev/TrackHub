@@ -112,31 +112,21 @@ const confirmDelete = async () => {
 }
 
 const saveChanges = async () => {
-  if (selectedCard.value && hasUnsavedChanges.value) {
+  if (selectedCard.value) {
     try {
+      console.log('Starting to save changes...');
       isSaving.value = true;
       const updatedCard = await cardStore.editCard(selectedCard.value.id, {
         title: editedTitle.value,
-        description: editorContent.value
+        description: editorContent.value,
+        listId: selectedCard.value.listId
       });
-
-      // Update both cardStore and listStore
-      cardStore.updateCardInStore(updatedCard);
-      listStore.updateCard(updatedCard.listId, updatedCard);
-
-      // Force reactivity update
-      cardStore.$patch((state) => {
-        state.selectedCard = { ...updatedCard };
-      });
-
+      console.log('Card saved successfully:', updatedCard);
       hasUnsavedChanges.value = false;
-      // Show success toast (implement when you have a toast system)
-
-      // Close the modal after successful save
-      closeCardEditor();
+      closeCardEditor(); // Close the modal after successful save
     } catch (error) {
       console.error('Error saving card changes:', error);
-      // Show error toast (implement when you have a toast system)
+      // Optionally, show an error message to the user
     } finally {
       isSaving.value = false;
     }

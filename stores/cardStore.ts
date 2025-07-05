@@ -10,6 +10,9 @@ export const useCardStore = defineStore('card', {
         selectedCard: null as Card | null,
     }),
     actions: {
+        initializeCards(cards: Card[]) {
+            this.cards = cards;
+        },
         /**
          * Opens a card by setting it as the selected card.
          * @param card - The card to be opened.
@@ -68,26 +71,56 @@ export const useCardStore = defineStore('card', {
          */
         async editCard(cardId: string, updatedData: Partial<Card>) {
             try {
-                const updatedCard = await $fetch(`/api/cards/${cardId}`, {
+                console.log('Editing card:', cardId, 'with data:', updatedData);
+
+                const response = await $fetch(`/api/cards/${cardId}`, {
                     method: 'PUT',
                     body: updatedData
-                })
-                this.updateCardInStore(updatedCard)
-                return updatedCard
+                });
+
+                console.log('Received updated card from server:', response);
+
+                if (response && response.updatedCard) {
+                    const updatedCard = response.updatedCard;
+
+                    // Update the card in this store
+                    this.updateCardInStore(updatedCard);
+
+                    // Update the card in the list store
+                    const listStore = useListStore();
+                    listStore.updateCard(updatedCard.listId, updatedCard);
+
+                    // If this card is currently selected, update the selectedCard
+                    if (this.selectedCard && this.selectedCard.id === updatedCard.id) {
+                        this.selectedCard = { ...updatedCard };
+                    }
+
+                    console.log('Card updated in stores:', updatedCard);
+                    console.log('Current cardStore state:', this.cards);
+                    console.log('Current listStore state:', listStore.lists);
+
+                    return updatedCard;
+                } else {
+                    throw new Error('Invalid response from server');
+                }
             } catch (error) {
-                console.error('Error editing card:', error)
-                throw error
+                console.error('Error editing card:', error);
+                throw error;
             }
         },
 
         updateCardInStore(updatedCard: Card) {
-            const index = this.cards.findIndex(card => card.id === updatedCard.id)
+            console.log('Updating card in cardStore:', updatedCard);
+            const index = this.cards.findIndex(card => card.id === updatedCard.id);
             if (index !== -1) {
-                this.cards[index] = { ...updatedCard }
+                this.cards[index] = { ...updatedCard };
+                console.log('Card updated in cardStore');
+            } else {
+                console.log('Card not found in cardStore, adding it');
+                this.cards.push(updatedCard);
             }
-            if (this.selectedCard && this.selectedCard.id === updatedCard.id) {
-                this.selectedCard = { ...updatedCard }
-            }
+            // Force reactivity
+            this.cards = [...this.cards];
         },
 
         /**

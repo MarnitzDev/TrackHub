@@ -139,11 +139,11 @@ export const useListStore = defineStore('list', {
             }
         },
 
-        removeCardFromList(cardId: string) {
-            this.lists.forEach(list => {
-                list.cards = list.cards.filter(card => card.id !== cardId)
-            })
-            this.lists = [...this.lists]
+        removeCardFromList(listId: string, cardId: string) {
+            const listIndex = this.lists.findIndex(list => list.id === listId)
+            if (listIndex !== -1) {
+                this.lists[listIndex].cards = this.lists[listIndex].cards.filter(card => card.id !== cardId)
+            }
         },
 
         moveCard({ cardId, fromListId, toListId, newIndex }: { cardId: string, fromListId: string, toListId: string, newIndex: number }) {
@@ -210,18 +210,30 @@ export const useListStore = defineStore('list', {
         },
 
         updateCard(listId: string, updatedCard: Card) {
+            console.log('Updating card in listStore:', { listId, updatedCard });
+            if (!listId) {
+                console.error('Invalid listId provided to updateCard');
+                return;
+            }
             const listIndex = this.lists.findIndex(list => list.id === listId);
             if (listIndex !== -1) {
                 const cardIndex = this.lists[listIndex].cards.findIndex(card => card.id === updatedCard.id);
                 if (cardIndex !== -1) {
-                    // Create a new array for the cards to trigger reactivity
-                    this.lists[listIndex].cards = [
-                        ...this.lists[listIndex].cards.slice(0, cardIndex),
-                        { ...updatedCard },
-                        ...this.lists[listIndex].cards.slice(cardIndex + 1)
-                    ];
-                    // Create a new array for the lists to trigger reactivity
-                    this.lists = [...this.lists];
+                    this.lists[listIndex].cards[cardIndex] = { ...updatedCard };
+                    console.log('Card updated in listStore');
+                } else {
+                    console.log('Card not found in list, adding it');
+                    this.lists[listIndex].cards.push(updatedCard);
+                }
+                // Force reactivity
+                this.lists = [...this.lists];
+            } else {
+                console.error('List not found:', listId);
+                // Optionally, you could try to find the correct list here
+                const correctList = this.lists.find(list => list.cards.some(card => card.id === updatedCard.id));
+                if (correctList) {
+                    console.log('Found correct list, updating card');
+                    this.updateCard(correctList.id, updatedCard);
                 }
             }
         },

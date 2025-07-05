@@ -21,6 +21,8 @@ const { loading, error } = storeToRefs(listStore)
 
 const sortedLists = computed(() => listStore.sortedLists)
 const isReordering = ref(false)
+const showDeleteConfirm = ref(false)
+const listToDelete = ref<string | null>(null)
 
 onMounted(async () => {
   if (props.boardId) {
@@ -49,8 +51,47 @@ const handleListChange = async (event: any) => {
   }
 }
 
-// ... (other methods remain the same)
+const handleCreateCard = async (listId: string, cardData: Partial<Card>) => {
+  await cardStore.createCard(listId, cardData)
+}
 
+const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
+  await cardStore.editCard(cardId, updatedData)
+}
+
+const handleDeleteCard = async (cardId: string, listId: string) => {
+  await cardStore.deleteCard(cardId, listId)
+}
+
+const handleEditList = async (listId: string, updatedData: Partial<List>) => {
+  await listStore.editList(props.boardId, listId, updatedData)
+}
+
+const handleDeleteListRequest = (listId: string) => {
+  listToDelete.value = listId
+  showDeleteConfirm.value = true
+}
+
+const handleDeleteList = async () => {
+  if (listToDelete.value) {
+    await listStore.deleteList(props.boardId, listToDelete.value)
+    showDeleteConfirm.value = false
+    listToDelete.value = null
+  }
+}
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false
+  listToDelete.value = null
+}
+
+const handleReorderCards = async (listId: string, cardIds: string[]) => {
+  await listStore.reorderCards({ listId, cardIds })
+}
+
+const handleMoveCard = async (payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }) => {
+  await cardStore.moveCard(payload)
+}
 </script>
 
 <template>

@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import draggable from 'vuedraggable'
@@ -56,6 +55,14 @@ const handleCardChange = async (event: any) => {
 const openCardEditor = (card: Card) => {
   cardStore.openCard(card)
 }
+
+const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
+  await cardStore.editCard(cardId, updatedData)
+}
+
+const handleDeleteCard = async (cardId: string) => {
+  await cardStore.deleteCard(cardId, props.listId)
+}
 </script>
 
 <template>
@@ -73,11 +80,16 @@ const openCardEditor = (card: Card) => {
         <CardItem
             :card="card"
             @click="openCardEditor(card)"
+            @edit="handleEditCard"
+            @delete="handleDeleteCard"
         />
       </template>
     </draggable>
 
-    <CardEditor />
+    <CardEditor
+        @save="handleEditCard"
+        @delete="handleDeleteCard"
+    />
   </div>
 </template>
 

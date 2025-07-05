@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref } from 'vue'
 import { List, Card } from '@prisma/client'
@@ -93,7 +92,9 @@ const cancelAddCard = () => {
 
 const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
   try {
-    await cardStore.editCard(cardId, updatedData)
+    const updatedCard = await cardStore.editCard(cardId, updatedData)
+    // Update the card in the listStore
+    listStore.updateCard(props.list.id, updatedCard)
     // Optionally handle successful card update (e.g., show a success message)
   } catch (error) {
     console.error('Error updating card:', error)
@@ -104,6 +105,8 @@ const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
 const handleDeleteCard = async (cardId: string) => {
   try {
     await cardStore.deleteCard(cardId)
+    // Remove the card from the listStore
+    listStore.removeCardFromList(props.list.id, cardId)
     // Optionally handle successful card deletion (e.g., show a success message)
   } catch (error) {
     console.error('Error deleting card:', error)
