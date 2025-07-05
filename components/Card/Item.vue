@@ -21,15 +21,21 @@ const cardStore = useCardStore()
 const openCard = () => {
   cardStore.openCard(props.card)
 }
+
+// Function to truncate HTML content
+const truncateHTML = (html: string, maxLength: number) => {
+  const div = document.createElement('div')
+  div.innerHTML = html
+  const text = div.textContent || div.innerText || ''
+  return text.length > maxLength ? text.substring(0, maxLength) + '...' : html
+}
 </script>
 
 <template>
-  <div @click="openCard" class="bg-white p-3 rounded shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer">
-    <div class="flex justify-between items-start">
-      <div>
-        <h3 class="font-medium text-gray-800">{{ card.title }}</h3>
-        <p v-if="card.description" class="text-sm text-gray-600 mt-1">{{ card.description }}</p>
-      </div>
+  <div @click="openCard" class="card-item bg-white p-3 rounded shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer">
+    <div class="flex flex-col">
+      <h3 class="font-medium text-gray-800 truncate">{{ card.title }}</h3>
+      <div v-if="card.description" class="text-sm text-gray-600 mt-1 description-preview" v-html="truncateHTML(card.description, 100)"></div>
     </div>
   </div>
 </template>
@@ -37,9 +43,18 @@ const openCard = () => {
 <style scoped>
 .card-item {
   cursor: grab;
+  overflow: hidden;
 }
 
 .card-item:active {
   cursor: grabbing;
+}
+
+.description-preview {
+  max-height: 3em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 </style>
