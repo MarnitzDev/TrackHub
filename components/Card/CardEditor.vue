@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useCardStore } from '~/stores/cardStore'
@@ -12,6 +11,8 @@ const isCardEditorOpen = computed(() => !!selectedCard.value)
 // -----------------------------
 const QuillEditor = ref(null)
 const editorContent = ref('')
+const isDeleting = ref(false)
+const showDeleteConfirm = ref(false)
 
 //=============================================================================
 // Quill Editor Configuration
@@ -100,10 +101,35 @@ const updateCardTitle = (newTitle: string) => {
   }
 }
 
-const deleteSelectedCard = async () => {
+const confirmDelete = async () => {
   if (selectedCard.value) {
-    await cardStore.deleteCard(selectedCard.value.id)
-    closeCardEditor()
+    try {
+      isDeleting.value = true
+      const result = await cardStore.deleteCard(selectedCard.value.id)
+
+      if (result.success) {
+        // Show a success message (uncomment when you have a toast system)
+        // useToast().add({
+        //   title: 'Success',
+        //   description: result.message,
+        //   color: 'green'
+        // })
+        closeCardEditor()
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      console.error('Error deleting card:', error)
+      // Show an error message (uncomment when you have a toast system)
+      // useToast().add({
+      //   title: 'Error',
+      //   description: error.message || 'Failed to delete card. Please try again.',
+      //   color: 'red'
+      // })
+    } finally {
+      isDeleting.value = false
+      showDeleteConfirm.value = false
+    }
   }
 }
 
@@ -123,6 +149,8 @@ const saveChanges = async () => {
       :open="isCardEditorOpen"
       @close="closeCardEditor"
       :ui="{ width: 'max-w-2xl' }"
+      aria-labelledby="card-editor-title"
+      aria-describedby="card-editor-description"
   >
     <template #content>
       <div v-if="selectedCard" class="p-4 space-y-4">
@@ -133,7 +161,7 @@ const saveChanges = async () => {
               placeholder="Card title"
               class="text-xl font-bold"
           />
-          <UButton color="red" variant="soft" @click="deleteSelectedCard">
+          <UButton color="red" variant="soft" @click="showDeleteConfirm = true">
             Delete Card
           </UButton>
         </div>
@@ -155,6 +183,20 @@ const saveChanges = async () => {
           <UButton color="primary" @click="saveChanges">
             Save Changes
           </UButton>
+        </div>
+      </div>
+    </template>
+  </UModal>
+
+  <!-- Delete Confirmation Modal -->
+  <UModal :open="showDeleteConfirm">
+    <template #content>
+      <div class="p-4">
+        <h3 class="text-lg font-semibold mb-2">Confirm Delete</h3>
+        <p>Are you sure you want to delete this card?</p>
+        <div class="mt-4 flex justify-end gap-2">
+          <UButton @click="showDeleteConfirm = false">Cancel</UButton>
+          <UButton color="red" :loading="isDeleting" @click="confirmDelete">Delete</UButton>
         </div>
       </div>
     </template>

@@ -92,18 +92,28 @@ export const useCardStore = defineStore('card', {
          */
         async deleteCard(cardId: string) {
             try {
+                // Attempt to delete from the server first
                 await $fetch(`/api/cards/${cardId}`, {
                     method: 'DELETE'
                 })
-                this.cards = this.cards.filter(c => c.id !== cardId)
+
+                // If server deletion is successful, update local state
+                const cardIndex = this.cards.findIndex(c => c.id === cardId)
+                if (cardIndex !== -1) {
+                    this.cards.splice(cardIndex, 1)
+                }
                 if (this.selectedCard && this.selectedCard.id === cardId) {
                     this.selectedCard = null
                 }
+
+                // Assuming you have a listStore
                 const listStore = useListStore()
                 listStore.removeCardFromList(cardId)
-            } catch (e: any) {
-                console.error('Error deleting card:', e)
-                throw e
+
+                return { success: true, message: 'Card deleted successfully' }
+            } catch (error) {
+                console.error('Error deleting card:', error)
+                return { success: false, message: 'Failed to delete card' }
             }
         },
 
