@@ -136,73 +136,77 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 </script>
 
 <template>
-  <div class="bg-gray-100 p-4 rounded min-w-[250px]">
-    <div class="flex justify-between items-center mb-2">
-      <h2 class="text-xl font-semibold">{{ list.title }}</h2>
-      <div class="flex space-x-2">
-        <button @click="openEditModal" class="text-blue-500 hover:text-blue-700">
+  <div class="list-item">
+    <div class="list-header">
+      <h2 class="list-title">{{ list.title }}</h2>
+      <div class="list-actions">
+        <button @click="openEditModal" class="edit-btn">
           <UIcon name="i-lucide-edit" class="w-4 h-4" />
         </button>
-        <button @click="showDeleteConfirm = true" class="text-red-500 hover:text-red-700">
+        <button @click="showDeleteConfirm = true" class="delete-btn">
           <UIcon name="i-lucide-trash-2" class="w-4 h-4" />
         </button>
-        <span class="list-handle cursor-move">☰</span>
+        <span class="list-handle">☰</span>
       </div>
     </div>
 
-    <CardContainer
-        :cards="list.cards"
-        :listId="list.id"
-        @editCard="handleEditCard"
-        @deleteCard="handleDeleteCard"
-        @reorderCards="handleReorderCards"
-        @moveCard="handleMoveCard"
-    />
-
-    <div v-if="isAddingCard" class="mt-2">
-      <textarea
-          v-model="newCardTitle"
-          class="w-full p-2 border rounded resize-none"
-          placeholder="Enter a title for this card..."
-          rows="3"
-          @keydown.enter.prevent="handleCreateCard"
-      ></textarea>
-      <div class="flex justify-between mt-2">
-        <UButton
-            color="primary"
-            size="sm"
-            @click="handleCreateCard"
-        >
-          Add Card
-        </UButton>
-        <UButton
-            color="gray"
-            size="sm"
-            @click="cancelAddCard"
-        >
-          Cancel
-        </UButton>
-      </div>
+    <div class="cards-container">
+      <CardContainer
+          :cards="list.cards"
+          :listId="list.id"
+          @editCard="handleEditCard"
+          @deleteCard="handleDeleteCard"
+          @reorderCards="handleReorderCards"
+          @moveCard="handleMoveCard"
+      />
     </div>
-    <button
-        v-else
-        @click="showAddCardInput"
-        class="w-full text-left p-2 text-gray-600 hover:bg-gray-200 rounded mt-2"
-    >
-      + Add a card
-    </button>
+
+    <div class="add-card-section">
+      <div v-if="isAddingCard" class="add-card-form">
+        <textarea
+            v-model="newCardTitle"
+            class="new-card-input"
+            placeholder="Enter a title for this card..."
+            rows="3"
+            @keydown.enter.prevent="handleCreateCard"
+        ></textarea>
+        <div class="add-card-actions">
+          <UButton
+              color="primary"
+              size="sm"
+              @click="handleCreateCard"
+          >
+            Add Card
+          </UButton>
+          <UButton
+              color="gray"
+              size="sm"
+              @click="cancelAddCard"
+          >
+            Cancel
+          </UButton>
+        </div>
+      </div>
+      <button
+          v-else
+          @click="showAddCardInput"
+          class="add-card-btn"
+      >
+        + Add a card
+      </button>
+    </div>
 
     <!-- Edit List Modal -->
     <UModal :open="isEditModalOpen">
       <template #content>
-        <div class="p-4">
-          <h3 class="text-lg font-semibold mb-4">Edit List Title</h3>
+        <div class="modal-content">
+          <h3 class="modal-title">Edit List Title</h3>
           <UInput
               v-model="editedTitle"
               placeholder="Enter list title"
-              class="mb-4"
+              class="edit-title-input"
           />
-          <div class="flex justify-end space-x-2">
+          <div class="modal-actions">
             <UButton @click="isEditModalOpen = false">
               Cancel
             </UButton>
@@ -220,10 +224,10 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
     <!-- Delete Confirmation Modal -->
     <UModal :open="showDeleteConfirm">
       <template #content>
-        <div class="p-4">
-          <h3 class="text-lg font-semibold mb-2">Confirm Delete</h3>
+        <div class="modal-content">
+          <h3 class="modal-title">Confirm Delete</h3>
           <p>Are you sure you want to delete this list?</p>
-          <div class="mt-4 flex justify-end gap-2">
+          <div class="modal-actions">
             <UButton @click="showDeleteConfirm = false">Cancel</UButton>
             <UButton color="red" :loading="isDeleting" @click="confirmDelete">Delete</UButton>
           </div>
@@ -232,3 +236,131 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
     </UModal>
   </div>
 </template>
+
+<style scoped>
+.list-item {
+  display: flex;
+  flex-direction: column;
+  background-color: #ebecf0;
+  border-radius: 3px;
+  width: 272px;
+  max-height: calc(100vh - 100px); /* Adjust based on your layout */
+  margin-right: 8px;
+}
+
+.list-header {
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.list-title {
+  font-weight: bold;
+  font-size: 14px;
+  margin: 0;
+}
+
+.list-actions {
+  display: flex;
+  align-items: center;
+}
+
+.edit-btn, .delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 4px;
+}
+
+.list-handle {
+  cursor: move;
+  padding: 4px;
+  margin-left: 4px;
+}
+
+.cards-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 8px;
+  min-height: 1px; /* Ensures the container can be scrolled */
+}
+
+.add-card-section {
+  padding: 8px;
+}
+
+.add-card-form {
+  margin-bottom: 8px;
+}
+
+.new-card-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(9,30,66,.25);
+  margin-bottom: 8px;
+  resize: none;
+}
+
+.add-card-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.add-card-btn {
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  background-color: transparent;
+  border: none;
+  border-radius: 3px;
+  color: #5e6c84;
+  cursor: pointer;
+}
+
+.add-card-btn:hover {
+  background-color: rgba(9,30,66,.08);
+  color: #172b4d;
+}
+
+.modal-content {
+  padding: 16px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.edit-title-input {
+  margin-bottom: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Customizing the scrollbar for cards */
+.cards-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cards-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.cards-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.cards-container::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+</style>
