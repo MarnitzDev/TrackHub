@@ -139,44 +139,68 @@ export const useListStore = defineStore('list', {
             }
         },
 
-        removeCardFromList(listId: string, cardId: string) {
-            const list = this.lists.find(l => l.id === listId);
-            if (list) {
-                list.cards = list.cards.filter(c => c.id !== cardId);
-                this.lists = [...this.lists];
+        async fetchAndUpdateList(listId: string) {
+            try {
+                const updatedList = await $fetch(`/api/lists/${listId}`)
+                const index = this.lists.findIndex(list => list.id === listId)
+                if (index !== -1) {
+                    this.lists[index] = updatedList
+
+                    // Sync cards with the card store
+                    const cardStore = useCardStore()
+                    cardStore.syncCardsWithList(listId, updatedList.cards)
+                }
+            } catch (error) {
+                console.error('Error fetching and updating list:', error)
             }
         },
 
+        removeCardFromList(cardId: string) {
+            this.lists.forEach(list => {
+                list.cards = list.cards.filter(card => card.id !== cardId)
+            })
+            this.lists = [...this.lists]
+        },
+
         moveCard({ cardId, fromListId, toListId, newIndex }: { cardId: string, fromListId: string, toListId: string, newIndex: number }) {
-            const fromList = this.lists.find(l => l.id === fromListId);
-            const toList = this.lists.find(l => l.id === toListId);
+            const fromList = this.lists.find(l => l.id === fromListId)
+            const toList = this.lists.find(l => l.id === toListId)
             if (fromList && toList) {
-                const card = fromList.cards.find(c => c.id === cardId);
+                const card = fromList.cards.find(c => c.id === cardId)
                 if (card) {
-                    fromList.cards = fromList.cards.filter(c => c.id !== cardId);
-                    toList.cards.splice(newIndex, 0, card);
-                    this.lists = [...this.lists];
+                    fromList.cards = fromList.cards.filter(c => c.id !== cardId)
+                    toList.cards.splice(newIndex, 0, card)
+                    this.lists = [...this.lists]
+
+                    // Sync with card store
+                    const cardStore = useCardStore()
+                    cardStore.syncCardsWithList(fromListId, fromList.cards)
+                    cardStore.syncCardsWithList(toListId, toList.cards)
                 }
             }
         },
 
         async reorderCards(listId: string, newOrder: string[]) {
-            const list = this.lists.find(l => l.id === listId);
+            const list = this.lists.find(l => l.id === listId)
             if (list) {
                 try {
                     const updatedCards = await $fetch(`/api/lists/${listId}/reorder`, {
                         method: 'POST',
                         body: { cardIds: newOrder }
-                    });
+                    })
 
                     if (Array.isArray(updatedCards)) {
-                        this.updateCardOrder(listId, updatedCards);
+                        this.updateCardOrder(listId, updatedCards)
+
+                        // Sync with card store
+                        const cardStore = useCardStore()
+                        cardStore.syncCardsWithList(listId, updatedCards)
                     } else {
-                        throw new Error('Unexpected server response format');
+                        throw new Error('Unexpected server response format')
                     }
                 } catch (error) {
-                    console.error('Error reordering cards:', error);
-                    throw error;
+                    console.error('Error reordering cards:', error)
+                    throw error
                 }
             }
         },
@@ -212,10 +236,14 @@ export const useListStore = defineStore('list', {
         },
 
         updateCardOrder(listId: string, updatedCards: Card[]) {
-            const list = this.lists.find(l => l.id === listId);
+            const list = this.lists.find(l => l.id === listId)
             if (list) {
-                list.cards = updatedCards;
-                this.lists = [...this.lists];
+                list.cards = updatedCards
+                this.lists = [...this.lists]
+
+                // Sync with card store
+                const cardStore = useCardStore()
+                cardStore.syncCardsWithList(listId, updatedCards)
             }
         },
 
