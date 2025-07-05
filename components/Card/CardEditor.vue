@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useCardStore } from '~/stores/cardStore'
+import { useListStore } from '~/stores/listStore'
 
 const cardStore = useCardStore()
+const listStore = useListStore()
 
 const selectedCard = computed(() => cardStore.selectedCard)
 const isCardEditorOpen = computed(() => !!selectedCard.value)
 
 // State
-// -----------------------------
 const QuillEditor = ref(null)
 const editorContent = ref('')
+const editedTitle = ref('')
 const isDeleting = ref(false)
 const showDeleteConfirm = ref(false)
+const isSaving = ref(false)
+const hasUnsavedChanges = ref(false)
 
-//=============================================================================
 // Quill Editor Configuration
-//=============================================================================
-
 const quillOptions = {
   theme: 'snow',
   modules: {
@@ -40,64 +41,50 @@ const quillOptions = {
 }
 
 // Lifecycle Hooks
-// -----------------------------
 onMounted(async () => {
   if (process.client) {
     const { QuillEditor: QE } = await import('@vueup/vue-quill')
     QuillEditor.value = QE
   }
-
   initializeEditorContent()
 })
 
 // Watchers
-// -----------------------------
 watch(selectedCard, (newCard) => {
   if (newCard) {
     editorContent.value = newCard.description || ''
+    editedTitle.value = newCard.title || ''
+    hasUnsavedChanges.value = false
   }
 })
 
-//=============================================================================
 // Editor Content Management
-//=============================================================================
-
 const initializeEditorContent = () => {
   if (selectedCard.value) {
     editorContent.value = selectedCard.value.description || ''
+    editedTitle.value = selectedCard.value.title || ''
   }
 }
 
-const updateContent = async (content: string) => {
+const updateContent = (content: string) => {
   editorContent.value = content
-  if (selectedCard.value) {
-    await cardStore.editCard(selectedCard.value.id, { description: content })
-  }
-}
-
-// Debounce function to limit the frequency of updates
-const debounce = (fn: Function, delay: number) => {
-  let timeoutId: NodeJS.Timeout
-  return (...args: any[]) => {
-    clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => fn(...args), delay)
-  }
-}
-
-// Debounced update function
-const debouncedUpdateContent = debounce(updateContent, 500)
-
-//=============================================================================
-// Card Management
-//=============================================================================
-
-const closeCardEditor = () => {
-  cardStore.closeCard()
+  hasUnsavedChanges.value = true
 }
 
 const updateCardTitle = (newTitle: string) => {
-  if (selectedCard.value) {
-    cardStore.editCard(selectedCard.value.id, { ...selectedCard.value, title: newTitle })
+  editedTitle.value = newTitle
+  hasUnsavedChanges.value = true
+}
+
+// Card Management
+const closeCardEditor = () => {
+  if (hasUnsavedChanges.value) {
+    // Optionally, show a confirmation dialog before closing
+    if (confirm('You have unsaved changes. Are you sure you want to close?')) {
+      cardStore.closeCard()
+    }
+  } else {
+    cardStore.closeCard()
   }
 }
 
@@ -108,24 +95,15 @@ const confirmDelete = async () => {
       const result = await cardStore.deleteCard(selectedCard.value.id)
 
       if (result.success) {
-        // Show a success message (uncomment when you have a toast system)
-        // useToast().add({
-        //   title: 'Success',
-        //   description: result.message,
-        //   color: 'green'
-        // })
+        listStore.removeCardFromList(selectedCard.value.listId, selectedCard.value.id)
         closeCardEditor()
+        // Show success toast (implement when you have a toast system)
       } else {
         throw new Error(result.message)
       }
     } catch (error) {
       console.error('Error deleting card:', error)
-      // Show an error message (uncomment when you have a toast system)
-      // useToast().add({
-      //   title: 'Error',
-      //   description: error.message || 'Failed to delete card. Please try again.',
-      //   color: 'red'
-      // })
+      // Show error toast (implement when you have a toast system)
     } finally {
       isDeleting.value = false
       showDeleteConfirm.value = false
@@ -134,14 +112,36 @@ const confirmDelete = async () => {
 }
 
 const saveChanges = async () => {
-  if (selectedCard.value) {
-    await cardStore.editCard(selectedCard.value.id, {
-      ...selectedCard.value,
-      description: editorContent.value
-    })
-    closeCardEditor()
+  if (selectedCard.value && hasUnsavedChanges.value) {
+    try {
+      isSaving.value = true;
+      const updatedCard = await cardStore.editCard(selectedCard.value.id, {
+        title: editedTitle.value,
+        description: editorContent.value
+      });
+
+      // Update both cardStore and listStore
+      cardStore.updateCardInStore(updatedCard);
+      listStore.updateCard(updatedCard.listId, updatedCard);
+
+      // Force reactivity update
+      cardStore.$patch((state) => {
+        state.selectedCard = { ...updatedCard };
+      });
+
+      hasUnsavedChanges.value = false;
+      // Show success toast (implement when you have a toast system)
+
+      // Close the modal after successful save
+      closeCardEditor();
+    } catch (error) {
+      console.error('Error saving card changes:', error);
+      // Show error toast (implement when you have a toast system)
+    } finally {
+      isSaving.value = false;
+    }
   }
-}
+};
 </script>
 
 <template>
@@ -156,7 +156,7 @@ const saveChanges = async () => {
       <div v-if="selectedCard" class="p-4 space-y-4">
         <div class="flex items-center justify-between">
           <UInput
-              :model-value="selectedCard.title"
+              :model-value="editedTitle"
               @update:model-value="updateCardTitle"
               placeholder="Card title"
               class="text-xl font-bold"
@@ -172,16 +172,21 @@ const saveChanges = async () => {
               v-model:content="editorContent"
               :options="quillOptions"
               contentType="html"
-              @update:content="debouncedUpdateContent"
+              @update:content="updateContent"
           />
           <p v-else>Loading editor...</p>
         </ClientOnly>
         <div class="flex justify-end space-x-2">
           <UButton color="gray" @click="closeCardEditor">
-            Cancel
+            Close
           </UButton>
-          <UButton color="primary" @click="saveChanges">
-            Save Changes
+          <UButton
+              color="primary"
+              :loading="isSaving"
+              @click="saveChanges"
+              :disabled="!hasUnsavedChanges"
+          >
+            {{ isSaving ? 'Saving...' : 'Save Changes' }}
           </UButton>
         </div>
       </div>

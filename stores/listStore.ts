@@ -139,22 +139,6 @@ export const useListStore = defineStore('list', {
             }
         },
 
-        async fetchAndUpdateList(listId: string) {
-            try {
-                const updatedList = await $fetch(`/api/lists/${listId}`)
-                const index = this.lists.findIndex(list => list.id === listId)
-                if (index !== -1) {
-                    this.lists[index] = updatedList
-
-                    // Sync cards with the card store
-                    const cardStore = useCardStore()
-                    cardStore.syncCardsWithList(listId, updatedList.cards)
-                }
-            } catch (error) {
-                console.error('Error fetching and updating list:', error)
-            }
-        },
-
         removeCardFromList(cardId: string) {
             this.lists.forEach(list => {
                 list.cards = list.cards.filter(card => card.id !== cardId)
@@ -225,14 +209,21 @@ export const useListStore = defineStore('list', {
             }
         },
 
-        updateCard(cardId: string, updatedData: Partial<Card>) {
-            this.lists.forEach(list => {
-                const cardIndex = list.cards.findIndex(card => card.id === cardId);
+        updateCard(listId: string, updatedCard: Card) {
+            const listIndex = this.lists.findIndex(list => list.id === listId);
+            if (listIndex !== -1) {
+                const cardIndex = this.lists[listIndex].cards.findIndex(card => card.id === updatedCard.id);
                 if (cardIndex !== -1) {
-                    list.cards[cardIndex] = { ...list.cards[cardIndex], ...updatedData };
+                    // Create a new array for the cards to trigger reactivity
+                    this.lists[listIndex].cards = [
+                        ...this.lists[listIndex].cards.slice(0, cardIndex),
+                        { ...updatedCard },
+                        ...this.lists[listIndex].cards.slice(cardIndex + 1)
+                    ];
+                    // Create a new array for the lists to trigger reactivity
+                    this.lists = [...this.lists];
                 }
-            });
-            this.lists = [...this.lists];
+            }
         },
 
         updateCardOrder(listId: string, updatedCards: Card[]) {

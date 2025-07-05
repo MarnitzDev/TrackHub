@@ -72,17 +72,21 @@ export const useCardStore = defineStore('card', {
                     method: 'PUT',
                     body: updatedData
                 })
-                const index = this.cards.findIndex(card => card.id === cardId)
-                if (index !== -1) {
-                    this.cards[index] = updatedCard
-                }
-                if (this.selectedCard && this.selectedCard.id === cardId) {
-                    this.selectedCard = updatedCard
-                }
+                this.updateCardInStore(updatedCard)
                 return updatedCard
             } catch (error) {
                 console.error('Error editing card:', error)
                 throw error
+            }
+        },
+
+        updateCardInStore(updatedCard: Card) {
+            const index = this.cards.findIndex(card => card.id === updatedCard.id)
+            if (index !== -1) {
+                this.cards[index] = { ...updatedCard }
+            }
+            if (this.selectedCard && this.selectedCard.id === updatedCard.id) {
+                this.selectedCard = { ...updatedCard }
             }
         },
 
