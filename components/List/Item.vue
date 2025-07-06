@@ -244,7 +244,7 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
   background-color: #ebecf0;
   border-radius: 3px;
   width: 272px;
-  max-height: calc(100vh - 100px); /* Adjust based on your layout */
+  height: 100%;
   margin-right: 8px;
 }
 
@@ -253,6 +253,9 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: #ebecf0;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
 }
 
 .list-title {
@@ -289,6 +292,11 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 
 .add-card-section {
   padding: 8px;
+  background-color: #ebecf0;
+  position: sticky;
+  bottom: 0;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
 }
 
 .add-card-form {
