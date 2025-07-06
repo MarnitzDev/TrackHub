@@ -143,8 +143,7 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
   flex-direction: column;
   overflow: hidden;
   min-height: 100%;
-  max-height: calc(100vh - 300px);
-  margin-bottom: 20px; /* Add margin at the bottom */
+  max-height: calc(100vh - 235px);
 }
 
 .lists-wrapper {
@@ -159,7 +158,6 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
   display: inline-flex;
   height: 100%;
   align-items: flex-start;
-  padding-bottom: 20px; /* Add padding at the bottom */
 }
 
 /* Customizing the scrollbar for horizontal list scrolling */

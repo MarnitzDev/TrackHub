@@ -244,7 +244,7 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
   margin-right: 8px;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 320px);
+  height: calc(100vh - 275px);
   min-height: 100px;
 }
 

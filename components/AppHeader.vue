@@ -30,11 +30,6 @@ const avatarUrl = computed(() => {
 // Navigation Items
 // -----------------------------
 const items = [
-  { label: 'Dashboard', icon: 'i-lucide-home', to: '/' },
-  { label: 'Board', icon: 'i-lucide-layout-dashboard', to: '/board' },
-  { label: 'Projects', icon: 'i-lucide-folder', to: '/projects' },
-  { label: 'Tasks', icon: 'i-lucide-check-square', to: '/tasks' },
-  { label: 'Team', icon: 'i-lucide-users', to: '/team' }
 ]
 
 // State
