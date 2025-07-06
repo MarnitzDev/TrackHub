@@ -164,21 +164,26 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 
 /* Customizing the scrollbar for horizontal list scrolling */
 .lists-wrapper::-webkit-scrollbar {
-  height: 12px;
+  height: 14px;
 }
 
 .lists-wrapper::-webkit-scrollbar-track {
-  background: #dfe3e6;
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 .lists-wrapper::-webkit-scrollbar-thumb {
-  background: #c4c9cc;
-  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.3s ease;
 }
 
 .lists-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a5acb0;
+  background-color: rgba(255, 255, 255, 1);
 }
+
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
