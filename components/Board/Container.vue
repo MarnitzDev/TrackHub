@@ -73,13 +73,18 @@ onMounted(() => boardStore.fetchBoards())
 
     <div v-else-if="boards.length === 0" class="text-center py-10">
       <p class="text-xl text-gray-600">You don't have any boards yet.</p>
-      <button
+      <UButton
           @click="openCreateBoardModal"
-          class="mt-4 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-lg font-semibold"
+          color="primary"
+          size="lg"
+          class="mt-4"
           data-testid="create-board-button"
       >
+        <template #leading>
+          <UIcon name="i-heroicons-plus" />
+        </template>
         Create Your First Board
-      </button>
+      </UButton>
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -91,14 +96,18 @@ onMounted(() => boardStore.fetchBoards())
       />
     </div>
 
-    <!-- New Board Button (when boards exist) -->
-    <button
+    <UButton
         v-if="boards.length > 0"
         @click="openCreateBoardModal"
-        class="mt-8 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-lg font-semibold"
+        color="primary"
+        size="lg"
+        class="mt-8"
     >
+      <template #leading>
+        <UIcon name="i-heroicons-plus" />
+      </template>
       Create New Board
-    </button>
+    </UButton>
 
     <!-- Create Board Modal -->
     <CreateBoardModal
