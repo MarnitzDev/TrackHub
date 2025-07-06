@@ -164,17 +164,62 @@ export const useCardStore = defineStore('card', {
          */
         async moveCard({ cardId, fromListId, toListId, newIndex }: { cardId: string, fromListId: string, toListId: string, newIndex: number }) {
             try {
-                const updatedCard = await $fetch(`/api/cards/${cardId}/move`, {
-                    method: 'PUT',
-                    body: { fromListId, toListId, newIndex }
-                })
                 const listStore = useListStore()
-                listStore.moveCard({ cardId, fromListId, toListId, newIndex })
-                return updatedCard
+
+                // Find the card in the source list or in the cardStore
+                let card = this.cards.find(c => c.id === cardId)
+                if (!card) {
+                    const sourceList = listStore.lists.find(l => l.id === fromListId)
+                    if (!sourceList) {
+                        console.error('Source list not found:', fromListId)
+                        throw new Error('Source list not found')
+                    }
+                    card = sourceList.cards.find(c => c.id === cardId)
+                }
+
+                if (!card) {
+                    console.error('Card not found:', cardId)
+                    throw new Error('Card not found')
+                }
+
+                // Update the card's listId
+                card.listId = toListId
+
+                // Remove the card from the source list
+                listStore.removeCardFromList(fromListId, cardId)
+
+                // Add the card to the destination list
+                listStore.addCardToList(toListId, card, newIndex)
+
+                // Get the updated order of cards in the destination list
+                const updatedList = listStore.lists.find(l => l.id === toListId)
+                if (!updatedList) {
+                    console.error('Destination list not found:', toListId)
+                    throw new Error('Destination list not found')
+                }
+
+                const updatedCardIds = updatedList.cards.map(c => c.id)
+
+                // Call the reorder API
+                const response = await $fetch(`/api/lists/${toListId}/reorder`, {
+                    method: 'POST',
+                    body: { cardIds: updatedCardIds }
+                })
+
+                // Update the local state with the response
+                if (response && response.updatedList) {
+                    this.syncCardsWithList(toListId, response.updatedList.cards)
+                    listStore.updateListCards(toListId, response.updatedList.cards)
+                }
+
+                // Ensure the card is in the cardStore
+                this.updateCardInStore(card)
+
+                return card
             } catch (e: any) {
                 console.error('Error moving card:', e)
                 throw e
             }
-        },
+        }
     },
 })

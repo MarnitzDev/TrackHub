@@ -20,7 +20,7 @@ import AppHeader from '~/components/AppHeader.vue'
 
 <style scoped>
 .content-container {
-  min-height: calc(100vh - 64px - 57px);
+  max-height: calc(100vh - 64px - 57px);
   overflow-y: auto;
 }
 </style>
