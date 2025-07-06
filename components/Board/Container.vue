@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -115,3 +116,67 @@ onMounted(() => boardStore.fetchBoards())
     />
   </div>
 </template>
+
+<style scoped>
+.container {
+  max-width: 1200px;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.bg-red-100 {
+  background-color: #fee2e2;
+}
+
+.border-red-400 {
+  border-color: #f87171;
+}
+
+.text-red-700 {
+  color: #b91c1c;
+}
+
+.bg-blue-500 {
+  background-color: #3b82f6;
+}
+
+.hover\:bg-blue-600:hover {
+  background-color: #2563eb;
+}
+
+.text-white {
+  color: #ffffff;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+.transition-colors {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+</style>

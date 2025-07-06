@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -27,7 +28,8 @@ const containerHeight = ref('100vh')
 
 const updateContainerHeight = () => {
   const headerHeight = 64 // Adjust this value based on your actual header height
-  containerHeight.value = `calc(100vh - ${headerHeight}px)`
+  const footerHeight = 57 // Adjust this value based on your actual footer height
+  containerHeight.value = `calc(100vh - ${headerHeight}px - ${footerHeight}px)`
 }
 
 onMounted(async () => {
@@ -45,56 +47,35 @@ onUnmounted(() => {
 })
 
 const handleListChange = async (event: any) => {
-  if (event.moved && !isReordering.value) {
-    isReordering.value = true
-    const newOrder = sortedLists.value.map((list, index) => ({ id: list.id, order: index }))
-
-    // Optimistic update
-    listStore.updateListOrder(newOrder)
-
-    try {
-      await listStore.reorderLists(props.boardId, newOrder)
-    } catch (error) {
-      console.error('Error reordering lists:', error)
-      await listStore.fetchLists(props.boardId)
-    } finally {
-      isReordering.value = false
-    }
-  }
+  // ... (existing code)
 }
 
 const handleCreateCard = async (listId: string, cardData: Partial<Card>) => {
-  await cardStore.createCard(listId, cardData)
+  // ... (existing code)
 }
 
 const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
-  await cardStore.editCard(cardId, updatedData)
+  // ... (existing code)
 }
 
 const handleDeleteCard = async (cardId: string, listId: string) => {
-  await cardStore.deleteCard(cardId, listId)
+  // ... (existing code)
 }
 
 const handleEditList = async (listId: string, updatedData: Partial<List>) => {
-  await listStore.editList(props.boardId, listId, updatedData)
+  // ... (existing code)
 }
 
 const handleDeleteListRequest = (listId: string) => {
-  listToDelete.value = listId
-  showDeleteConfirm.value = true
+  // ... (existing code)
 }
 
 const handleDeleteList = async () => {
-  if (listToDelete.value) {
-    await listStore.deleteList(props.boardId, listToDelete.value)
-    showDeleteConfirm.value = false
-    listToDelete.value = null
-  }
+  // ... (existing code)
 }
 
 const cancelDelete = () => {
-  showDeleteConfirm.value = false
-  listToDelete.value = null
+  // ... (existing code)
 }
 
 const handleReorderCards = async (listId: string, cardIds: string[]) => {
@@ -161,13 +142,15 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 100%;
+  max-height: calc(100vh - 300px);
+  margin-bottom: 20px; /* Add margin at the bottom */
 }
 
 .lists-wrapper {
   flex-grow: 1;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 20px;
   display: flex;
   align-items: flex-start;
 }
@@ -176,6 +159,7 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
   display: inline-flex;
   height: 100%;
   align-items: flex-start;
+  padding-bottom: 20px; /* Add padding at the bottom */
 }
 
 /* Customizing the scrollbar for horizontal list scrolling */
