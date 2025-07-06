@@ -5,11 +5,6 @@ import { useBoardStore } from '~/stores/boardStore'
 // Store
 const boardStore = useBoardStore()
 
-// Define the props for this component
-const props = defineProps<{
-  open: boolean
-}>()
-
 // Reactive references for form inputs
 const newBoardTitle = ref('')
 const newBoardDescription = ref('')
@@ -44,12 +39,12 @@ const closeModal = () => {
   newBoardTitle.value = ''
   newBoardDescription.value = ''
   selectedBackground.value = ''
-  boardStore.setEditingBoard(null) // Assuming this is used to control modal visibility
+  boardStore.setCreateModalOpen(false)
 }
 </script>
 
 <template>
-  <UModal :open="open" @close="closeModal" data-testid="create-board-modal">
+  <UModal :open="boardStore.isCreateModalOpen" @close="closeModal" data-testid="create-board-modal">
     <template #content>
       <div class="p-6">
         <h2 class="text-2xl font-bold mb-6">Create New Board</h2>
@@ -96,20 +91,20 @@ const closeModal = () => {
 
           <!-- Form Actions -->
           <div class="flex justify-end space-x-3">
-            <button
-                type="button"
+            <UButton
                 @click="closeModal"
-                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                color="gray"
             >
               Cancel
-            </button>
-            <button
+            </UButton>
+            <UButton
                 type="submit"
-                :disabled="boardStore.loading || !newBoardTitle || !selectedBackground"
-                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                color="primary"
+                :loading="boardStore.loading"
+                :disabled="boardStore.loading || !newBoardTitle"
             >
               {{ boardStore.loading ? 'Creating...' : 'Create Board' }}
-            </button>
+            </UButton>
           </div>
         </form>
       </div>

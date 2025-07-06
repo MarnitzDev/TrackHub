@@ -78,7 +78,7 @@ export const useBoardStore = defineStore('board', {
          * Sets the board to be edited.
          * @param board - The board to be edited or null to clear.
          */
-        setEditingBoard(board: Board | null) {
+        setEditingBoard(board: BoardWithLists | null) {
             console.log('boardStore: setEditingBoard', board)
             this.editingBoard = board ? { ...board } : null
             this.isEditModalOpen = !!board

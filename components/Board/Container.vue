@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -19,7 +18,6 @@ const { boards, loading, error, editingBoard, isCreateModalOpen, isEditModalOpen
 const handleCreateBoard = async (boardData) => {
   try {
     await boardStore.createBoard(boardData)
-    boardStore.setCreateModalOpen(false)
     // toast.success('Board created successfully!')
   } catch (error) {
     console.error('Error creating board:', error)
@@ -45,7 +43,6 @@ const getBackgroundImageUrl = (imageName: string | null) => {
 const handleUpdateBoard = async (boardData) => {
   try {
     await boardStore.updateBoard(boardData)
-    boardStore.setEditingBoard(null)
     // toast.success('Board updated successfully!')
   } catch (error) {
     console.error('Error updating board:', error)
@@ -110,17 +107,12 @@ onMounted(() => boardStore.fetchBoards())
     </UButton>
 
     <!-- Create Board Modal -->
-    <CreateBoardModal
-        :open="isCreateModalOpen"
-        @close="boardStore.setCreateModalOpen(false)"
-        @create="handleCreateBoard"
-    />
+    <CreateBoardModal />
 
     <!-- Edit Board Modal -->
     <EditBoardModal
-        :open="isEditModalOpen"
+        v-if="editingBoard"
         :board="editingBoard"
-        @close="boardStore.setEditingBoard(null)"
         @update="handleUpdateBoard"
     />
   </div>
