@@ -136,66 +136,67 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 </script>
 
 <template>
-  <div class="list-item">
-    <div class="list-header">
-      <h2 class="list-title">{{ list.title }}</h2>
-      <div class="list-actions">
-        <button @click="openEditModal" class="edit-btn">
-          <UIcon name="i-lucide-edit" class="w-4 h-4" />
-        </button>
-        <button @click="showDeleteConfirm = true" class="delete-btn">
-          <UIcon name="i-lucide-trash-2" class="w-4 h-4" />
-        </button>
-        <span class="list-handle">☰</span>
-      </div>
-    </div>
-
-    <div class="cards-container">
-      <CardContainer
-          :cards="list.cards"
-          :listId="list.id"
-          @editCard="handleEditCard"
-          @deleteCard="handleDeleteCard"
-          @reorderCards="handleReorderCards"
-          @moveCard="handleMoveCard"
-      />
-    </div>
-
-    <div class="add-card-section">
-      <div v-if="isAddingCard" class="add-card-form">
-        <textarea
-            v-model="newCardTitle"
-            class="new-card-input"
-            placeholder="Enter a title for this card..."
-            rows="3"
-            @keydown.enter.prevent="handleCreateCard"
-        ></textarea>
-        <div class="add-card-actions">
-          <UButton
-              color="primary"
-              size="sm"
-              @click="handleCreateCard"
-          >
-            Add Card
-          </UButton>
-          <UButton
-              color="gray"
-              size="sm"
-              @click="cancelAddCard"
-          >
-            Cancel
-          </UButton>
+  <div class="list-wrapper">
+    <div class="list-content">
+      <div class="list-header">
+        <h2 class="list-title">{{ list.title }}</h2>
+        <div class="list-actions">
+          <button @click="openEditModal" class="edit-btn">
+            <UIcon name="i-lucide-edit" class="w-4 h-4" />
+          </button>
+          <button @click="showDeleteConfirm = true" class="delete-btn">
+            <UIcon name="i-lucide-trash-2" class="w-4 h-4" />
+          </button>
+          <span class="list-handle">☰</span>
         </div>
       </div>
-      <button
-          v-else
-          @click="showAddCardInput"
-          class="add-card-btn"
-      >
-        + Add a card
-      </button>
-    </div>
 
+      <div class="cards-container">
+        <CardContainer
+            :cards="list.cards"
+            :listId="list.id"
+            @editCard="handleEditCard"
+            @deleteCard="handleDeleteCard"
+            @reorderCards="handleReorderCards"
+            @moveCard="handleMoveCard"
+        />
+      </div>
+
+      <div class="add-card-section">
+        <div v-if="isAddingCard" class="add-card-form">
+          <textarea
+              v-model="newCardTitle"
+              class="new-card-input"
+              placeholder="Enter a title for this card..."
+              rows="3"
+              @keydown.enter.prevent="handleCreateCard"
+          ></textarea>
+          <div class="add-card-actions">
+            <UButton
+                color="primary"
+                size="sm"
+                @click="handleCreateCard"
+            >
+              Add Card
+            </UButton>
+            <UButton
+                color="gray"
+                size="sm"
+                @click="cancelAddCard"
+            >
+              Cancel
+            </UButton>
+          </div>
+        </div>
+        <button
+            v-else
+            @click="showAddCardInput"
+            class="add-card-btn"
+        >
+          + Add a card
+        </button>
+      </div>
+    </div>
     <!-- Edit List Modal -->
     <UModal :open="isEditModalOpen">
       <template #content>
@@ -238,17 +239,25 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 </template>
 
 <style scoped>
-.list-item {
+.list-wrapper {
+  width: 272px;
+  margin-right: 8px;
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 320px);
+  min-height: 100px;
+}
+
+.list-content {
   background-color: #ebecf0;
   border-radius: 3px;
-  width: 272px;
-  height: 100%;
-  margin-right: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .list-header {
+  flex-shrink: 0;
   padding: 10px;
   display: flex;
   justify-content: space-between;
@@ -284,17 +293,16 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 }
 
 .cards-container {
-  flex-grow: 1;
+  flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0 8px;
-  min-height: 1px; /* Ensures the container can be scrolled */
 }
 
 .add-card-section {
+  flex-shrink: 0;
   padding: 8px;
   background-color: #ebecf0;
-  position: sticky;
-  bottom: 0;
   border-bottom-left-radius: 3px;
   border-bottom-right-radius: 3px;
 }
