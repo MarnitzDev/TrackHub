@@ -41,7 +41,6 @@ watch(fetchError, (newError) => {
 })
 
 // State
-const showCreateListModal = ref(false)
 const newListTitle = ref('')
 const showCreateCardModal = ref(false)
 const newCardTitle = ref('')
@@ -77,7 +76,6 @@ const createList = async () => {
       board.value.lists.push(newList)
     }
 
-    showCreateListModal.value = false
     newListTitle.value = ''
   } catch (error) {
     console.error('Error creating list:', error)
@@ -269,16 +267,7 @@ const updateCard = async () => {
   >
     <div class="w-full py-4 mb-6" style="background-color: rgba(255, 255, 255, 0.2);">
       <div class="container mx-auto px-4 flex justify-between items-center">
-        <h1 class="text-xl font-bold text-white">{{ board.title }}</h1>
-        <UButton
-            @click="showCreateListModal = true"
-            variant="ghost"
-        >
-          <template #leading>
-            <UIcon name="i-heroicons-plus" class="mr-1" />
-          </template>
-          Add New List
-        </UButton>
+        <h1 class="text-xl font-bold">{{ board.title }}</h1>
       </div>
     </div>
 
@@ -296,22 +285,6 @@ const updateCard = async () => {
           @reorderLists="reorderLists"
       />
     </div>
-
-    <!-- Create List Modal -->
-    <UModal :open="showCreateListModal">
-      <template #content>
-        <div class="p-4">
-          <h2 class="text-2xl font-bold mb-4">Create New List</h2>
-          <form @submit.prevent="createList">
-            <input v-model="newListTitle" type="text" placeholder="List Title" class="w-full p-2 border rounded mb-4">
-            <div class="flex justify-end">
-              <UButton type="button" @click="showCreateListModal = false" class="mr-2">Cancel</UButton>
-              <UButton type="submit" color="primary">Create</UButton>
-            </div>
-          </form>
-        </div>
-      </template>
-    </UModal>
 
     <!-- Create/Edit Card Modal -->
     <UModal :open="showCreateCardModal">

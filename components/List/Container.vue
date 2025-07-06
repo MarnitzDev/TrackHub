@@ -1,13 +1,11 @@
-
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import draggable from 'vuedraggable'
-import { Board, List, Card } from '@prisma/client'
+import { List, Card } from '@prisma/client'
 import { useListStore } from '~/stores/listStore'
 import { useCardStore } from '~/stores/cardStore'
 import ListItem from './Item.vue'
-import { useRoute } from 'vue-router'
 
 interface Props {
   boardId: string
@@ -17,14 +15,13 @@ const props = defineProps<Props>()
 
 const listStore = useListStore()
 const cardStore = useCardStore()
-const route = useRoute()
 const { loading, error } = storeToRefs(listStore)
 
 const sortedLists = computed(() => listStore.sortedLists)
 const isReordering = ref(false)
-const showDeleteConfirm = ref(false)
-const listToDelete = ref<string | null>(null)
 const containerHeight = ref('100vh')
+const showCreateListModal = ref(false)
+const newListTitle = ref('')
 
 const updateContainerHeight = () => {
   const headerHeight = 64 // Adjust this value based on your actual header height
@@ -47,43 +44,31 @@ onUnmounted(() => {
 })
 
 const handleListChange = async (event: any) => {
-  // ... (existing code)
+  if (event.moved) {
+    const { newIndex, element } = event.moved
+    await listStore.reorderLists(props.boardId, sortedLists.value.map((list, index) => ({
+      id: list.id,
+      order: index
+    })))
+  }
 }
 
-const handleCreateCard = async (listId: string, cardData: Partial<Card>) => {
-  // ... (existing code)
-}
+const createList = async () => {
+  if (!props.boardId) return
 
-const handleEditCard = async (cardId: string, updatedData: Partial<Card>) => {
-  // ... (existing code)
-}
+  const newListOrder = sortedLists.value.length
+  try {
+    await listStore.createList({
+      title: newListTitle.value,
+      boardId: props.boardId,
+      order: newListOrder
+    })
 
-const handleDeleteCard = async (cardId: string, listId: string) => {
-  // ... (existing code)
-}
-
-const handleEditList = async (listId: string, updatedData: Partial<List>) => {
-  // ... (existing code)
-}
-
-const handleDeleteListRequest = (listId: string) => {
-  // ... (existing code)
-}
-
-const handleDeleteList = async () => {
-  // ... (existing code)
-}
-
-const cancelDelete = () => {
-  // ... (existing code)
-}
-
-const handleReorderCards = async (listId: string, cardIds: string[]) => {
-  await listStore.reorderCards({ listId, cardIds })
-}
-
-const handleMoveCard = async (payload: { cardId: string, fromListId: string, toListId: string, newIndex: number }) => {
-  await cardStore.moveCard(payload)
+    showCreateListModal.value = false
+    newListTitle.value = ''
+  } catch (error) {
+    console.error('Error creating list:', error)
+  }
 }
 </script>
 
@@ -109,28 +94,45 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
                 :list="list"
                 :boardId="props.boardId"
                 :is-reordering="isReordering"
-                @createCard="(cardData) => handleCreateCard(list.id, cardData)"
-                @editCard="handleEditCard"
-                @deleteCard="(cardId) => handleDeleteCard(cardId, list.id)"
-                @editList="(updatedData) => handleEditList(list.id, updatedData)"
-                @deleteList="() => handleDeleteListRequest(list.id)"
-                @reorderCards="(cardIds) => handleReorderCards(list.id, cardIds)"
-                @moveCard="handleMoveCard"
+                @createCard="(cardData) => cardStore.createCard({ ...cardData, listId: list.id })"
+                @editCard="cardStore.updateCard"
+                @deleteCard="(cardId) => cardStore.deleteCard(cardId)"
+                @editList="(updatedData) => listStore.editList(props.boardId, list.id, updatedData)"
+                @deleteList="() => listStore.deleteList(props.boardId, list.id)"
+                @reorderCards="(cardIds) => listStore.reorderCards({ listId: list.id, cardIds })"
+                @moveCard="cardStore.moveCard"
             />
           </template>
         </draggable>
+
+        <!-- Add New List Button -->
+        <div class="add-list-wrapper">
+          <UButton
+              @click="showCreateListModal = true"
+              variant="ghost"
+              class="add-list-button"
+          >
+            <template #leading>
+              <UIcon name="i-heroicons-plus" class="mr-1" />
+            </template>
+            Add New List
+          </UButton>
+        </div>
       </div>
     </template>
 
-    <UModal :open="showDeleteConfirm" @close="cancelDelete">
+    <!-- Create List Modal -->
+    <UModal :open="showCreateListModal" @close="showCreateListModal = false">
       <template #content>
         <div class="p-4">
-          <h3 class="text-lg font-semibold mb-2">Confirm Delete</h3>
-          <p>Are you sure you want to delete this list? This action cannot be undone.</p>
-          <div class="mt-4 flex justify-end space-x-2">
-            <UButton @click="cancelDelete">Cancel</UButton>
-            <UButton color="red" @click="handleDeleteList">Delete</UButton>
-          </div>
+          <h2 class="text-2xl font-bold mb-4">Create New List</h2>
+          <form @submit.prevent="createList">
+            <input v-model="newListTitle" type="text" placeholder="List Title" class="w-full p-2 border rounded mb-4">
+            <div class="flex justify-end">
+              <UButton type="button" @click="showCreateListModal = false" class="mr-2">Cancel</UButton>
+              <UButton type="submit" color="primary">Create</UButton>
+            </div>
+          </form>
         </div>
       </template>
     </UModal>
@@ -160,6 +162,27 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
   align-items: flex-start;
 }
 
+.add-list-wrapper {
+  min-width: 272px;
+  margin-left: 8px;
+  height: 100%;
+}
+
+.add-list-button {
+  width: 100%;
+  height: 40px;
+  background-color: rgba(255, 255, 255, 0.24);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-list-button:hover {
+  background-color: rgba(255, 255, 255, 0.32);
+}
+
 /* Customizing the scrollbar for horizontal list scrolling */
 .lists-wrapper::-webkit-scrollbar {
   height: 14px;
@@ -180,8 +203,6 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 .lists-wrapper::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 1);
 }
-
-
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
