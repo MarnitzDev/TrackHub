@@ -151,7 +151,7 @@ const saveChanges = async () => {
               placeholder="Card title"
               class="text-xl font-bold"
           />
-          <UButton color="red" variant="soft" @click="showDeleteConfirm = true">
+          <UButton color="error" variant="soft" @click="showDeleteConfirm = true">
             Delete Card
           </UButton>
         </div>
@@ -166,8 +166,8 @@ const saveChanges = async () => {
           />
           <p v-else>Loading editor...</p>
         </ClientOnly>
-        <div class="flex justify-end space-x-2">
-          <UButton color="gray" @click="closeCardEditor">
+        <div class="flex justify-end space-x-2 mt-4">
+          <UButton color="neutral" variant="ghost" @click="closeCardEditor">
             Close
           </UButton>
           <UButton

@@ -97,20 +97,22 @@ const closeModal = () => {
           </div>
 
           <div class="flex justify-end space-x-3">
-            <button
+            <UButton
                 type="button"
+                color="neutral"
+                variant="ghost"
                 @click="closeModal"
-                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Cancel
-            </button>
-            <button
+            </UButton>
+            <UButton
                 type="submit"
+                color="primary"
+                variant="soft"
                 :disabled="boardStore.loading || !boardTitle || !selectedBackground"
-                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {{ boardStore.loading ? 'Updating...' : 'Update Board' }}
-            </button>
+            </UButton>
           </div>
         </form>
       </div>

@@ -104,9 +104,11 @@ onMounted(() => {
       <!-- User and Actions (Right) -->
       <div class="flex items-center space-x-4">
         <div class="relative">
-          <button
+          <UButton
               @click="toggleUserMenu"
-              class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition duration-150 ease-in-out"
+              color="neutral"
+              variant="link"
+              class="flex items-center space-x-2 p-2"
               data-testid="user-menu-button"
           >
             <img
@@ -122,7 +124,7 @@ onMounted(() => {
             />
             <span class="hidden md:inline" data-testid="user-display-name">{{ displayName }}</span>
             <UIcon name="i-lucide-chevron-down" class="w-4 h-4 text-gray-500" />
-          </button>
+          </UButton>
           <transition
               enter-active-class="transition ease-out duration-100"
               enter-from-class="transform opacity-0 scale-95"
@@ -144,20 +146,24 @@ onMounted(() => {
                 >
                   Profile
                 </NuxtLink>
-                <button
+                <UButton
                     @click="handleSignOut"
-                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    color="neutral"
+                    variant="link"
+                    class="block w-full text-left px-4 py-2 text-sm"
                 >
                   Sign out
-                </button>
+                </UButton>
               </template>
               <template v-else>
-                <button
+                <UButton
                     @click="handleSignIn"
-                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    color="neutral"
+                    variant="link"
+                    class="block w-full text-left px-4 py-2 text-sm"
                 >
                   Sign In
-                </button>
+                </UButton>
               </template>
             </div>
           </transition>

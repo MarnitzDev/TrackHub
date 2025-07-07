@@ -98,8 +98,8 @@ const confirmDelete = async () => {
           <h3 class="text-lg font-semibold mb-2">Confirm Delete</h3>
           <p>Are you sure you want to delete this board?</p>
           <div class="mt-4 flex justify-end gap-2">
-            <UButton @click.stop="showDeleteConfirm = false">Cancel</UButton>
-            <UButton color="red" :loading="isDeleting" @click.stop="confirmDelete">Delete</UButton>
+            <UButton @click.stop="showDeleteConfirm = false" color="neutral" variant="ghost">Cancel</UButton>
+            <UButton :loading="isDeleting" @click.stop="confirmDelete" color="error" variant="soft">Delete</UButton>
           </div>
         </div>
       </template>

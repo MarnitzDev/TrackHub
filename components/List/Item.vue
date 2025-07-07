@@ -141,13 +141,13 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
       <div class="list-header">
         <h2 class="list-title">{{ list.title }}</h2>
         <div class="list-actions">
-          <button @click="openEditModal" class="edit-btn">
+          <UButton @click="openEditModal" color="neutral" variant="link" class="edit-btn">
             <UIcon name="i-lucide-edit" class="w-4 h-4" />
-          </button>
-          <button @click="showDeleteConfirm = true" class="delete-btn">
+          </UButton>
+          <UButton @click="showDeleteConfirm = true" color="neutral" variant="link" class="delete-btn">
             <UIcon name="i-lucide-trash-2" class="w-4 h-4" />
-          </button>
-          <span class="list-handle">☰</span>
+          </UButton>
+          <UIcon name="i-lucide-grip-vertical" class="list-handle" />
         </div>
       </div>
 
@@ -180,7 +180,8 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
               Add Card
             </UButton>
             <UButton
-                color="gray"
+                color="neutral"
+                variant="ghost"
                 size="sm"
                 @click="cancelAddCard"
             >
@@ -188,13 +189,15 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
             </UButton>
           </div>
         </div>
-        <button
+        <UButton
             v-else
             @click="showAddCardInput"
+            color="neutral"
+            variant="ghost"
             class="add-card-btn"
         >
           + Add a card
-        </button>
+        </UButton>
       </div>
     </div>
     <!-- Edit List Modal -->
@@ -208,7 +211,7 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
               class="edit-title-input"
           />
           <div class="modal-actions">
-            <UButton @click="isEditModalOpen = false">
+            <UButton @click="isEditModalOpen = false" color="neutral" variant="ghost">
               Cancel
             </UButton>
             <UButton
@@ -229,8 +232,8 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
           <h3 class="modal-title">Confirm Delete</h3>
           <p>Are you sure you want to delete this list?</p>
           <div class="modal-actions">
-            <UButton @click="showDeleteConfirm = false">Cancel</UButton>
-            <UButton color="red" :loading="isDeleting" @click="confirmDelete">Delete</UButton>
+            <UButton @click="showDeleteConfirm = false" color="neutral" variant="ghost">Cancel</UButton>
+            <UButton :loading="isDeleting" @click="confirmDelete" color="error" variant="soft">Delete</UButton>
           </div>
         </div>
       </template>
