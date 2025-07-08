@@ -164,13 +164,13 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 
       <div class="add-card-section">
         <div v-if="isAddingCard" class="add-card-form">
-          <textarea
+          <UTextarea
               v-model="newCardTitle"
               class="new-card-input"
               placeholder="Enter a title for this card..."
               rows="3"
               @keydown.enter.prevent="handleCreateCard"
-          ></textarea>
+          />
           <div class="add-card-actions">
             <UButton
                 color="primary"
@@ -319,11 +319,9 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
 
 .new-card-input {
   width: 100%;
-  padding: 6px 8px;
   border: none;
   border-radius: 3px;
-  box-shadow: 0 1px 0 rgba(9,30,66,.25);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   resize: none;
 }
 

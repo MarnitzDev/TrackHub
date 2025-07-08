@@ -292,8 +292,8 @@ const updateCard = async () => {
         <div class="p-4">
           <h2 class="text-2xl font-bold mb-4">{{ editingCard ? 'Edit Card' : 'Create New Card' }}</h2>
           <form @submit.prevent="editingCard ? updateCard() : createCard()">
-            <input v-model="newCardTitle" type="text" placeholder="Card Title" class="w-full p-2 border rounded mb-4">
-            <textarea v-model="newCardDescription" placeholder="Card Description" class="w-full p-2 border rounded mb-4"></textarea>
+            <UInput v-model="newCardTitle" type="text" placeholder="Card Title" class="w-full" />
+            <UTextarea v-model="newCardDescription" placeholder="Card Description" class="w-full" />
             <div class="flex justify-end">
               <UButton type="button" @click="showCreateCardModal = false" class="mr-2">Cancel</UButton>
               <UButton type="submit" color="primary">{{ editingCard ? 'Update' : 'Create' }}</UButton>

@@ -130,8 +130,8 @@ const createList = async () => {
         <div class="p-4">
           <h2 class="text-2xl font-bold mb-4">Create New List</h2>
           <form @submit.prevent="createList">
-            <input v-model="newListTitle" type="text" placeholder="List Title" class="w-full p-2 border rounded mb-4">
-            <div class="flex justify-end">
+            <UInput v-model="newListTitle" type="text" placeholder="List Title" size="xl" class="w-full" />
+            <div class="flex justify-end mt-4">
               <UButton type="button" @click="showCreateListModal = false" class="mr-2" color="neutral" variant="ghost">Cancel</UButton>
               <UButton type="submit" color="primary">Create</UButton>
             </div>
