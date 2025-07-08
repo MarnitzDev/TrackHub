@@ -265,7 +265,7 @@ const updateCard = async () => {
       class="min-h-screen"
       :style="backgroundImageUrl ? `background-image: url(${backgroundImageUrl}); background-size: cover; background-position: center; background-attachment: fixed;` : ''"
   >
-    <div class="w-full py-4 mb-6" style="background-color: rgba(255, 255, 255, 0.2);">
+    <div class="w-full py-4 mb-6" style="background-color: rgba(0, 0, 0, 0.1);">
       <div class="container mx-auto px-4 flex justify-between items-center">
         <h1 class="text-xl font-bold">{{ board.title }}</h1>
       </div>

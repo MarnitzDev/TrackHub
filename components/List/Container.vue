@@ -22,6 +22,7 @@ const isReordering = ref(false)
 const containerHeight = ref('100vh')
 const showCreateListModal = ref(false)
 const newListTitle = ref('')
+const hasLists = computed(() => sortedLists.value.length > 0)
 
 const updateContainerHeight = () => {
   const headerHeight = 64 // Adjust this value based on your actual header height
@@ -82,6 +83,7 @@ const createList = async () => {
       </div>
       <div class="lists-wrapper">
         <draggable
+            v-if="hasLists"
             :list="sortedLists"
             item-key="id"
             class="lists-container"
@@ -105,18 +107,18 @@ const createList = async () => {
           </template>
         </draggable>
 
-        <!-- Add New List Button -->
-        <div class="add-list-wrapper">
+        <!-- Add New List Button or Create First List -->
+        <div :class="['add-list-wrapper', { 'first-list': !hasLists }]">
           <UButton
               @click="showCreateListModal = true"
               variant="ghost"
               color="neutral"
-              class="add-list-button"
+              class="add-list-button py-2 px-4"
           >
             <template #leading>
               <UIcon name="i-heroicons-plus" class="mr-1" />
             </template>
-            Add another list
+            {{ hasLists ? 'Add another list' : 'Add a list' }}
           </UButton>
         </div>
       </div>
@@ -164,8 +166,7 @@ const createList = async () => {
 }
 
 .add-list-wrapper {
-  margin-left: 8px;
-  background-color: rgba(255, 255, 255, 0.24);
+  background-color: rgba(255, 255, 255, 0.4);
   border-radius: 3px;
 }
 
