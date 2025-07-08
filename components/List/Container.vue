@@ -46,11 +46,19 @@ onUnmounted(() => {
 
 const handleListChange = async (event: any) => {
   if (event.moved) {
-    const { newIndex, element } = event.moved
-    await listStore.reorderLists(props.boardId, sortedLists.value.map((list, index) => ({
-      id: list.id,
-      order: index
-    })))
+    isReordering.value = true
+    try {
+      const { newIndex, element } = event.moved
+      await listStore.reorderLists(props.boardId, sortedLists.value.map((list, index) => ({
+        id: list.id,
+        order: index
+      })))
+    } catch (error) {
+      console.error('Error reordering lists:', error)
+      // Optionally, show an error message to the user
+    } finally {
+      isReordering.value = false
+    }
   }
 }
 
@@ -78,9 +86,6 @@ const createList = async () => {
     <p v-if="loading">Loading lists...</p>
     <p v-else-if="error">Error: {{ error }}</p>
     <template v-else>
-      <div v-if="isReordering" class="fixed top-0 left-0 right-0 bg-blue-500 text-white text-center py-2 z-50">
-        Reordering lists...
-      </div>
       <div class="lists-wrapper">
         <draggable
             v-if="hasLists"
@@ -139,6 +144,14 @@ const createList = async () => {
         </div>
       </template>
     </UModal>
+
+    <!-- Reordering notification at the bottom -->
+    <transition name="fade">
+      <div v-if="isReordering" class="reordering-notification">
+        <UIcon name="i-heroicons-arrow-path" class="animate-spin mr-2" />
+        Reordering lists...
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -203,6 +216,43 @@ const createList = async () => {
 
 .lists-wrapper::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 1);
+}
+
+.reordering-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(59, 130, 246, 0.9);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 20px);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 /* Responsive adjustments */

@@ -7,11 +7,6 @@
         <slot />
       </main>
     </div>
-    <footer class="bg-white shadow-md">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-gray-600">
-        © {{ new Date().getFullYear() }} TrackHub. All rights reserved.
-      </div>
-    </footer>
   </div>
 </template>
 
