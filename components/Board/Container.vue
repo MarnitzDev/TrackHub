@@ -111,8 +111,8 @@ onMounted(() => boardStore.fetchBoards())
 
     <!-- Edit Board Modal -->
     <EditBoardModal
-        v-if="editingBoard"
-        :board="editingBoard"
+        v-if="boardStore.editingBoard"
+        :board="boardStore.editingBoard"
         @update="handleUpdateBoard"
     />
   </div>

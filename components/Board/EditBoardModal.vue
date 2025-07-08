@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Board } from '@prisma/client'
 import { useBoardStore } from '~/stores/boardStore'
 
 const props = defineProps<{
-  open: boolean
   board: Board | null
 }>()
 
@@ -13,6 +12,7 @@ const boardStore = useBoardStore()
 const boardTitle = ref('')
 const boardDescription = ref('')
 const selectedBackground = ref('')
+const isOpen = computed(() => !!boardStore.editingBoard)
 
 // List of background images for selection
 const backgroundImages = [
@@ -23,7 +23,7 @@ const backgroundImages = [
   { id: 'bg5', url: '/images/board-backgrounds/bg5.jpg' },
 ]
 
-watch(() => props.board, (newBoard) => {
+watch(() => boardStore.editingBoard, (newBoard) => {
   if (newBoard) {
     boardTitle.value = newBoard.title
     boardDescription.value = newBoard.description || ''
@@ -32,11 +32,11 @@ watch(() => props.board, (newBoard) => {
 }, { immediate: true })
 
 const handleUpdateBoard = async () => {
-  if (!props.board || !boardTitle.value.trim()) return
+  if (!boardStore.editingBoard || !boardTitle.value.trim()) return
 
   try {
     await boardStore.updateBoard({
-      id: props.board.id,
+      id: boardStore.editingBoard.id,
       title: boardTitle.value,
       description: boardDescription.value,
       backgroundImage: selectedBackground.value
@@ -54,7 +54,7 @@ const closeModal = () => {
 </script>
 
 <template>
-  <UModal :open="open" @close="closeModal">
+  <UModal :open="isOpen" @close="closeModal">
     <template #content>
       <div class="p-6">
         <h2 class="text-2xl font-bold mb-6">Edit Board</h2>
