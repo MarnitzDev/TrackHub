@@ -76,8 +76,8 @@ const confirmDelete = async () => {
       <div
           class="absolute inset-0 bg-gradient-to-b from-black/40 to-transparent"
       ></div>
-      <div class="absolute inset-x-0 top-0 p-4 flex justify-between items-center">
-        <span class="font-semibold text-white text-lg">
+      <div class="absolute inset-x-0 bottom-0 py-2 px-4 flex justify-between items-center bg-white">
+        <span class="font-semibold text-lg">
           {{ board.title }}
         </span>
         <UDropdownMenu
@@ -86,7 +86,7 @@ const confirmDelete = async () => {
             :ui="{ content: 'w-48' }"
             @click.stop
         >
-          <UButton color="neutral" variant="subtle" icon="i-lucide-settings" @click.stop />
+          <UButton color="neutral" variant="ghost" icon="i-lucide-settings" @click.stop />
         </UDropdownMenu>
       </div>
     </div>
