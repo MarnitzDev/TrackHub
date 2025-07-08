@@ -110,12 +110,13 @@ const createList = async () => {
           <UButton
               @click="showCreateListModal = true"
               variant="ghost"
+              color="neutral"
               class="add-list-button"
           >
             <template #leading>
               <UIcon name="i-heroicons-plus" class="mr-1" />
             </template>
-            Add New List
+            Add another list
           </UButton>
         </div>
       </div>
@@ -163,16 +164,15 @@ const createList = async () => {
 }
 
 .add-list-wrapper {
-  min-width: 272px;
   margin-left: 8px;
-  height: 100%;
+  background-color: rgba(255, 255, 255, 0.24);
+  border-radius: 3px;
 }
 
 .add-list-button {
-  width: 100%;
-  height: 40px;
-  background-color: rgba(255, 255, 255, 0.24);
   color: white;
+  font-weight: 400;
+  text-align: left;
   border: none;
   border-radius: 3px;
   cursor: pointer;
@@ -180,7 +180,7 @@ const createList = async () => {
 }
 
 .add-list-button:hover {
-  background-color: rgba(255, 255, 255, 0.32);
+  background-color: white;
 }
 
 /* Customizing the scrollbar for horizontal list scrolling */
