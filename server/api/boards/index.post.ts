@@ -1,4 +1,3 @@
-
 import { getServerSession } from '#auth'
 import { PrismaClient } from '@prisma/client'
 import path from 'path'
@@ -25,20 +24,29 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
+        let user = await prisma.user.findUnique({
+            where: { email: session.user.email }
+        })
+
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    email: session.user.email,
+                    name: session.user.name || null,
+                }
+            })
+        }
+
         const backgroundImage = body.backgroundImage
             ? path.basename(body.backgroundImage)
-            : 'default.jpg'
+            : undefined
 
         const newBoard = await prisma.board.create({
             data: {
                 title: body.title,
                 description: body.description || '',
-                backgroundImage: backgroundImage,
-                user: {
-                    connect: {
-                        email: session.user.email
-                    }
-                }
+                ...(backgroundImage && { backgroundImage }),
+                userId: user.id
             }
         })
 

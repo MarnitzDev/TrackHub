@@ -208,7 +208,9 @@ const handleMoveCard = async (payload: { cardId: string, fromListId: string, toL
           <UInput
               v-model="editedTitle"
               placeholder="Enter list title"
+              variant="soft"
               class="edit-title-input"
+              :selectOnFocus="false"
           />
           <div class="modal-actions">
             <UButton @click="isEditModalOpen = false" color="neutral" variant="ghost">
