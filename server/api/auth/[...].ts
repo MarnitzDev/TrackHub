@@ -10,6 +10,8 @@ console.log('Auth handler environment:', {
     NUXT_PUBLIC_SITE_URL: process.env.NUXT_PUBLIC_SITE_URL
 })
 
+const origin = process.env.NUXT_AUTH_ORIGIN || process.env.ORIGIN || process.env.NUXT_PUBLIC_SITE_URL || 'https://trackhub.up.railway.app'
+
 export default NuxtAuthHandler({
     providers: [
         GoogleProvider.default({
@@ -34,5 +36,9 @@ export default NuxtAuthHandler({
             }
             return session
         }
-    }
+    },
+    // Add this line to set the origin explicitly
+    origin: origin
 })
+
+console.log('Auth handler configured with origin:', origin)

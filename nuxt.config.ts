@@ -22,7 +22,7 @@ export default defineNuxtConfig({
     }
   },
   auth: {
-    origin: process.env.ORIGIN || process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    origin: process.env.NUXT_AUTH_ORIGIN || process.env.ORIGIN || process.env.NUXT_PUBLIC_SITE_URL || 'https://trackhub.up.railway.app',
     enableGlobalAppMiddleware: true,
     provider: {
       type: 'authjs'
@@ -34,8 +34,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      origin: 'https://trackhub.up.railway.app',
-      siteUrl: 'https://trackhub.up.railway.app',
+      origin: process.env.NUXT_AUTH_ORIGIN || process.env.ORIGIN || process.env.NUXT_PUBLIC_SITE_URL || 'https://trackhub.up.railway.app',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || process.env.ORIGIN || process.env.NUXT_AUTH_ORIGIN || 'https://trackhub.up.railway.app',
     }
   },
   hooks: {
