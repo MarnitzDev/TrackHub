@@ -29,7 +29,7 @@ export default defineNuxtConfig({
       type: 'authjs',
       addDefaultCallbackUrl: true
     },
-    baseUrl: 'https://trackhub-production.up.railway.app',
+    baseUrl: process.env.AUTH_ORIGIN || 'http://localhost:3000',
     session: {
       enableRefreshPeriodically: false,
       enableRefreshOnWindowFocus: false
@@ -37,7 +37,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
+      siteUrl: process.env.AUTH_ORIGIN || 'http://localhost:3000',
     }
   }
 })
