@@ -1,3 +1,5 @@
+const baseUrl = process.env.SITE_URL || 'http://localhost:3000'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
@@ -22,7 +24,6 @@ export default defineNuxtConfig({
     }
   },
   auth: {
-    origin: process.env.NUXT_AUTH_ORIGIN || process.env.ORIGIN || process.env.NUXT_PUBLIC_SITE_URL || 'https://trackhub.up.railway.app',
     enableGlobalAppMiddleware: true,
     provider: {
       type: 'authjs'
@@ -33,15 +34,10 @@ export default defineNuxtConfig({
     }
   },
   runtimeConfig: {
+    authSecret: process.env.AUTH_SECRET || 'dev-secret',
     public: {
-      origin: process.env.NUXT_AUTH_ORIGIN || process.env.ORIGIN || process.env.NUXT_PUBLIC_SITE_URL || 'https://trackhub.up.railway.app',
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || process.env.ORIGIN || process.env.NUXT_AUTH_ORIGIN || 'https://trackhub.up.railway.app',
-    }
-  },
-  hooks: {
-    'build:before': () => {
-      console.log('ORIGIN:', process.env.ORIGIN);
-      console.log('NUXT_PUBLIC_SITE_URL:', process.env.NUXT_PUBLIC_SITE_URL);
+      siteUrl: baseUrl,
+      authOrigin: baseUrl
     }
   }
 })
