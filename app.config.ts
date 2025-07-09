@@ -1,4 +1,7 @@
 export default defineAppConfig({
+    auth: {
+        origin: 'https://trackhub.up.railway.app'
+    },
     ui: {
         colors: {
             primary: 'blue',

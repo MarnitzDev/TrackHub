@@ -34,8 +34,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      origin: process.env.ORIGIN || process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || process.env.ORIGIN || 'http://localhost:3000',
+      origin: 'https://trackhub.up.railway.app',
+      siteUrl: 'https://trackhub.up.railway.app',
     }
   },
   hooks: {
