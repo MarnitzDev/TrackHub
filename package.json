@@ -12,7 +12,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "start": "node .output/server/index.mjs",
+    "start": "nuxt start",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "cypress open"
