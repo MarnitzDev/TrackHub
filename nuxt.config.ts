@@ -22,7 +22,7 @@ export default defineNuxtConfig({
     }
   },
   auth: {
-    origin: process.env.NUXT_PUBLIC_SITE_URL || process.env.ORIGIN || 'http://localhost:3000',
+    origin: process.env.NUXT_PUBLIC_SITE_URL,
     enableGlobalAppMiddleware: true,
     provider: {
       type: 'authjs'
@@ -34,7 +34,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
     }
   }
 })
