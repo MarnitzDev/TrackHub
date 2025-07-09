@@ -22,20 +22,20 @@ export default defineNuxtConfig({
     }
   },
   auth: {
-    origin: 'https://trackhub-production.up.railway.app',
-    enableGlobalAppMiddleware: true,
-    provider: {
-      type: 'authjs'
+    globalAppMiddleware: {
+      isEnabled: true
     },
-    globalMiddlewareOptions: {
-      allow404WithoutAuth: true,
+    provider: {
+      type: 'authjs',
       addDefaultCallbackUrl: true
+    },
+    baseUrl: 'https://trackhub-production.up.railway.app',
+    session: {
+      enableRefreshPeriodically: false,
+      enableRefreshOnWindowFocus: false
     }
   },
   runtimeConfig: {
-    auth: {
-      origin: 'https://trackhub-production.up.railway.app'
-    },
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
     }
