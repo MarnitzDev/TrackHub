@@ -1,9 +1,14 @@
 import { NuxtAuthHandler } from '#auth'
 import GoogleProvider from 'next-auth/providers/google'
-import { useRuntimeConfig } from '#app'
 
-const config = useRuntimeConfig()
-console.log('Runtime config:', config)
+console.log('Auth handler environment:', {
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not set',
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not set',
+    NUXT_SESSION_PASSWORD: process.env.NUXT_SESSION_PASSWORD ? 'Set' : 'Not set',
+    NUXT_AUTH_ORIGIN: process.env.NUXT_AUTH_ORIGIN,
+    ORIGIN: process.env.ORIGIN,
+    NUXT_PUBLIC_SITE_URL: process.env.NUXT_PUBLIC_SITE_URL
+})
 
 export default NuxtAuthHandler({
     providers: [
@@ -30,13 +35,4 @@ export default NuxtAuthHandler({
             return session
         }
     }
-})
-
-console.log('Auth handler environment:', {
-    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not set',
-    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not set',
-    NUXT_SESSION_PASSWORD: process.env.NUXT_SESSION_PASSWORD ? 'Set' : 'Not set',
-    NUXT_AUTH_ORIGIN: process.env.NUXT_AUTH_ORIGIN,
-    ORIGIN: process.env.ORIGIN,
-    NUXT_PUBLIC_SITE_URL: process.env.NUXT_PUBLIC_SITE_URL
 })
