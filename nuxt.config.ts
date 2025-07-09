@@ -22,7 +22,7 @@ export default defineNuxtConfig({
     }
   },
   auth: {
-    origin: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    origin: 'https://trackhub-production.up.railway.app',
     enableGlobalAppMiddleware: true,
     provider: {
       type: 'authjs'
@@ -34,7 +34,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     auth: {
-      origin: process.env.NUXT_PUBLIC_SITE_URL
+      origin: 'https://trackhub-production.up.railway.app'
     },
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
