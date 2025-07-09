@@ -1,5 +1,3 @@
-const baseUrl = process.env.SITE_URL || 'http://localhost:3000'
-
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
@@ -24,6 +22,7 @@ export default defineNuxtConfig({
     }
   },
   auth: {
+    origin: process.env.ORIGIN || 'http://localhost:3000',
     enableGlobalAppMiddleware: true,
     provider: {
       type: 'authjs'
@@ -34,10 +33,8 @@ export default defineNuxtConfig({
     }
   },
   runtimeConfig: {
-    authSecret: process.env.AUTH_SECRET || 'dev-secret',
     public: {
-      siteUrl: baseUrl,
-      authOrigin: baseUrl
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     }
   }
 })

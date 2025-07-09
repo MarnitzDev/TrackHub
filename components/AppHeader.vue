@@ -6,7 +6,7 @@ import { useBoardStore } from '../stores/boardStore'
 
 // Stores and Auth
 // -----------------------------
-const { status, data: session, signIn, signOut } = useAuth()
+const { status, data: session, signOut } = useAuth()
 const userStore = useUserStore()
 const boardStore = useBoardStore()
 
@@ -63,11 +63,6 @@ const handleSignOut = async () => {
   }
 }
 
-const handleSignIn = () => {
-  signIn('google')
-  isUserMenuOpen.value = false
-}
-
 // Lifecycle Hooks
 // -----------------------------
 onMounted(() => {
@@ -82,7 +77,7 @@ onMounted(() => {
 
 <template>
   <header class="bg-white shadow-md">
-    <div class="container mx-auto px-4 py-2 flex items-center justify-between relative">
+    <div class="container mx-auto px-4 py-2 flex items-center justify-between relative h-16">
       <!-- Logo (Left) -->
       <div class="flex items-center">
         <NuxtLink to="/" class="font-bold text-xl text-blue-600">TrackHub</NuxtLink>
@@ -102,13 +97,13 @@ onMounted(() => {
       </nav>
 
       <!-- User and Actions (Right) -->
-      <div class="flex items-center space-x-4">
-        <div class="relative">
+      <div class="flex items-center space-x-4 h-full">
+        <div v-if="isAuthenticated" class="relative h-full flex items-center">
           <UButton
               @click="toggleUserMenu"
               color="neutral"
               variant="link"
-              class="flex items-center space-x-2 p-2"
+              class="flex items-center space-x-2 p-2 h-full"
               data-testid="user-menu-button"
           >
             <img
@@ -136,30 +131,22 @@ onMounted(() => {
             <div
                 v-if="isUserMenuOpen"
                 class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
+                style="top: 100%;"
                 data-testid="user-menu-dropdown"
             >
-              <template v-if="isAuthenticated">
-                <UButton
-                    @click="handleSignOut"
-                    color="neutral"
-                    variant="link"
-                    class="block w-full text-left px-4 py-2 text-sm"
-                >
-                  Sign out
-                </UButton>
-              </template>
-              <template v-else>
-                <UButton
-                    @click="handleSignIn"
-                    color="neutral"
-                    variant="link"
-                    class="block w-full text-left px-4 py-2 text-sm"
-                >
-                  Sign In
-                </UButton>
-              </template>
+              <UButton
+                  @click="handleSignOut"
+                  color="neutral"
+                  variant="link"
+                  class="block w-full text-left px-4 py-2 text-sm"
+              >
+                Sign out
+              </UButton>
             </div>
           </transition>
+        </div>
+        <div v-else class="h-full flex items-center">
+          <div class="h-8 w-8"></div>
         </div>
       </div>
     </div>
