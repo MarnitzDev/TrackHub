@@ -8,7 +8,6 @@ export default defineNuxtConfig({
   ],
   modules: [
     '@pinia/nuxt',
-    '@nuxt/content',
     '@nuxt/eslint',
     '@nuxt/fonts',
     '@nuxt/icon',
