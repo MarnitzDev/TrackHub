@@ -27,6 +27,9 @@ export default defineNuxtConfig({
     globalAppMiddleware: {
       isEnabled: true
     },
+    pages: {
+      signIn: '/auth/login'
+    },
     provider: {
       type: 'authjs',
       addDefaultCallbackUrl: true
