@@ -24,12 +24,7 @@ export default defineNuxtConfig({
   auth: {
     originEnvKey: 'NUXT_PUBLIC_SITE_URL',
     secret: process.env.AUTH_SECRET,
-    globalAppMiddleware: {
-      isEnabled: true
-    },
-    pages: {
-      signIn: '/auth/login'
-    },
+    enableGlobalAppMiddleware: true,
     provider: {
       type: 'authjs',
       addDefaultCallbackUrl: false
