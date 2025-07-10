@@ -37,6 +37,13 @@ export default defineNuxtConfig({
       enableRefreshOnWindowFocus: false
     }
   },
+  nitro: {
+    cors: {
+      credentials: true,
+      origin: [process.env.NUXT_PUBLIC_SITE_URL, 'https://accounts.google.com'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    },
+  },
   runtimeConfig: {
     public: {
       authOrigin: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000'
