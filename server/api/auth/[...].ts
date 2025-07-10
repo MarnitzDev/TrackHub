@@ -2,7 +2,7 @@ import { NuxtAuthHandler } from '#auth'
 import GoogleProvider from 'next-auth/providers/google'
 
 export default NuxtAuthHandler({
-    origin: process.env.ORIGIN,
+    origin: process.env.NUXT_PUBLIC_SITE_URL,
     secret: process.env.AUTH_SECRET,
     providers: [
         GoogleProvider.default({
