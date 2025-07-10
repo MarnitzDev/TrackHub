@@ -1,13 +1,9 @@
-console.log("*************************");
-console.log("*************************");
-console.log("*************************");
-console.log('BUILD ORIGIN:', process.env.ORIGIN);
-
 import { NuxtAuthHandler } from '#auth'
 import GoogleProvider from 'next-auth/providers/google'
 
 export default NuxtAuthHandler({
     origin: process.env.ORIGIN,
+    secret: process.env.AUTH_SECRET,
     providers: [
         GoogleProvider.default({
             clientId: process.env.GOOGLE_CLIENT_ID,

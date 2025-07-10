@@ -1,9 +1,3 @@
-console.log("--------------------------------------------------");
-console.log("--------------------------------------------------");
-console.log("--------------------------------------------------");
-console.log('BUILD ORIGIN:', process.env.ORIGIN);
-console.log('BUILD NUXT_PUBLIC_SITE_URL:', process.env.NUXT_PUBLIC_SITE_URL);
-
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
@@ -29,6 +23,7 @@ export default defineNuxtConfig({
   },
   auth: {
     originEnvKey: 'ORIGIN',
+    secret: process.env.AUTH_SECRET,
     globalAppMiddleware: {
       isEnabled: true
     },
