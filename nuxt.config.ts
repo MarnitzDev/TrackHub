@@ -43,9 +43,6 @@ export default defineNuxtConfig({
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     },
   },
-  typescript: {
-    shim: false
-  },
   runtimeConfig: {
     public: {
       authOrigin: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000'
