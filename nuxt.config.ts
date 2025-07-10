@@ -22,7 +22,7 @@ export default defineNuxtConfig({
     }
   },
   auth: {
-    originEnvKey: 'ORIGIN',
+    originEnvKey: 'NUXT_PUBLIC_SITE_URL',
     secret: process.env.AUTH_SECRET,
     globalAppMiddleware: {
       isEnabled: true
