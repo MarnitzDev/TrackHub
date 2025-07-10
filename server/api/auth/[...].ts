@@ -1,3 +1,8 @@
+console.log("*************************");
+console.log("*************************");
+console.log("*************************");
+console.log('BUILD ORIGIN:', process.env.ORIGIN);
+
 import { NuxtAuthHandler } from '#auth'
 import GoogleProvider from 'next-auth/providers/google'
 
