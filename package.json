@@ -11,7 +11,7 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
+    "postinstall": "prisma generate && nuxt prepare",
     "start": "node .output/server/index.mjs",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",

@@ -38,11 +38,15 @@ export default defineNuxtConfig({
     }
   },
   nitro: {
+    preset: 'node-server',
     cors: {
       credentials: true,
       origin: [process.env.NUXT_PUBLIC_SITE_URL, 'https://accounts.google.com'],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     },
+  },
+  typescript: {
+    shim: false
   },
   runtimeConfig: {
     public: {
