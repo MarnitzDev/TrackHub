@@ -2,7 +2,6 @@ console.log("--------------------------------------------------");
 console.log("--------------------------------------------------");
 console.log("--------------------------------------------------");
 console.log('BUILD ORIGIN:', process.env.ORIGIN);
-console.log('BUILD AUTH_ORIGIN:', process.env.AUTH_ORIGIN);
 console.log('BUILD NUXT_PUBLIC_SITE_URL:', process.env.NUXT_PUBLIC_SITE_URL);
 
 export default defineNuxtConfig({
