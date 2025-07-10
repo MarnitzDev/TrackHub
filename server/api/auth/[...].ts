@@ -8,8 +8,6 @@ export default NuxtAuthHandler({
             clientSecret: process.env.GOOGLE_CLIENT_SECRET
         })
     ],
-    console.log('AUTH_SECRET:', process.env.AUTH_SECRET);
-    secret: process.env.AUTH_SECRET,
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
