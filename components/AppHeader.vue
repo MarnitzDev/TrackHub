@@ -6,7 +6,7 @@ import { useBoardStore } from '../stores/boardStore'
 
 // Stores and Auth
 // -----------------------------
-const { status, data: session, signIn, signOut } = useAuth()
+const { status, data: session, signOut } = useAuth()
 const userStore = useUserStore()
 const boardStore = useBoardStore()
 
@@ -30,6 +30,7 @@ const avatarUrl = computed(() => {
 // Navigation Items
 // -----------------------------
 const items = [
+  // Add your navigation items here if needed
 ]
 
 // State
@@ -47,25 +48,13 @@ const toggleUserMenu = () => {
 const handleSignOut = async () => {
   try {
     await signOut()
-    // Clear user data
     userStore.$reset()
-    // Clear board data
     boardStore.$reset()
-    // Clear any other relevant stores
-
-    // Optionally, you can also clear local storage
     localStorage.clear()
-
-    // Redirect to login page or home page
     navigateTo('/auth/login')
   } catch (error) {
     console.error('Error during sign out:', error)
   }
-}
-
-const handleSignIn = () => {
-  signIn('google')
-  isUserMenuOpen.value = false
 }
 
 // Lifecycle Hooks
@@ -81,8 +70,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <header class="bg-white shadow-md">
-    <div class="container mx-auto px-4 py-2 flex items-center justify-between relative">
+  <header class="bg-white shadow-md h-16"> <!-- Fixed height -->
+    <div class="container mx-auto px-4 h-full flex items-center justify-between relative">
       <!-- Logo (Left) -->
       <div class="flex items-center">
         <NuxtLink to="/" class="font-bold text-xl text-blue-600">TrackHub</NuxtLink>
@@ -103,7 +92,7 @@ onMounted(() => {
 
       <!-- User and Actions (Right) -->
       <div class="flex items-center space-x-4">
-        <div class="relative">
+        <div v-if="isAuthenticated" class="relative">
           <UButton
               @click="toggleUserMenu"
               color="neutral"
@@ -138,29 +127,18 @@ onMounted(() => {
                 class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
                 data-testid="user-menu-dropdown"
             >
-              <template v-if="isAuthenticated">
-                <UButton
-                    @click="handleSignOut"
-                    color="neutral"
-                    variant="link"
-                    class="block w-full text-left px-4 py-2 text-sm"
-                >
-                  Sign out
-                </UButton>
-              </template>
-              <template v-else>
-                <UButton
-                    @click="handleSignIn"
-                    color="neutral"
-                    variant="link"
-                    class="block w-full text-left px-4 py-2 text-sm"
-                >
-                  Sign In
-                </UButton>
-              </template>
+              <UButton
+                  @click="handleSignOut"
+                  color="neutral"
+                  variant="link"
+                  class="block w-full text-left px-4 py-2 text-sm"
+              >
+                Sign out
+              </UButton>
             </div>
           </transition>
         </div>
+        <div v-else class="w-8 h-8"></div>
       </div>
     </div>
   </header>
