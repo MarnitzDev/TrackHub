@@ -51,7 +51,7 @@ const handleSignOut = async () => {
     userStore.$reset()
     boardStore.$reset()
     localStorage.clear()
-    navigateTo('/auth/login')
+    navigateTo('/')
   } catch (error) {
     console.error('Error during sign out:', error)
   }
