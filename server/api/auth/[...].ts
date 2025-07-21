@@ -9,6 +9,6 @@ export default NuxtAuthHandler({
         })
     ],
     pages: {
-        signIn: '/api/auth/signin/google'
+        signIn: '/'
     }
 })

@@ -28,10 +28,9 @@ export default defineNuxtConfig({
     provider: {
       type: 'authjs'
     },
-    globalMiddlewareOptions: {
-      allow404WithoutAuth: true,
-      addDefaultCallbackUrl: true
-    }
+    globalAppMiddleware: {
+      isEnabled: true
+    },
   },
   runtimeConfig: {
     public: {
