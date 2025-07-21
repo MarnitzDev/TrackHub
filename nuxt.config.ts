@@ -31,6 +31,19 @@ export default defineNuxtConfig({
     globalAppMiddleware: {
       isEnabled: true
     },
+    origin: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    configuration: {
+      providers: [
+        {
+          type: 'google',
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET
+        }
+      ],
+      pages: {
+        signIn: '/'
+      }
+    }
   },
   runtimeConfig: {
     public: {
