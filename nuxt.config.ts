@@ -29,7 +29,9 @@ export default defineNuxtConfig({
       type: 'authjs'
     },
     globalAppMiddleware: {
-      isEnabled: false
+      isEnabled: true,
+      allow404WithoutAuth: true,
+      addDefaultCallbackUrl: true
     },
     origin: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   },
