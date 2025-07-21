@@ -13,7 +13,7 @@ onMounted(() => {
 })
 
 const handleLogin = () => {
-  signIn('google')
+  signIn('google', { callbackUrl: '/' })
 }
 </script>
 
