@@ -1,35 +1,36 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import BoardContainer from '~/components/Board/Container.vue'
 
-const { status, signIn } = useAuth()
+const { status, signIn, getSession } = useAuth()
 const isLoading = ref(true)
+const session = ref(null)
 
-onMounted(() => {
-  // Set isLoading to false after a short delay to allow auth status to resolve
-  setTimeout(() => {
-    isLoading.value = false
-  }, 1000)
+onMounted(async () => {
+  session.value = await getSession()
+  isLoading.value = false
+})
+
+watch(status, async (newStatus) => {
+  if (newStatus === 'authenticated') {
+    session.value = await getSession()
+  } else {
+    session.value = null
+  }
 })
 
 const handleLogin = () => {
-  signIn('google', { callbackUrl: '/' })
+  signIn('google')
 }
 </script>
 
 <template>
-  <div :class="{
-    'flex items-center justify-center min-h-screen bg-gray-100': status !== 'authenticated',
-    'bg-gray-100': status === 'authenticated'
-  }">
-    <div :class="{
-      'w-full max-w-md p-8 bg-white rounded-lg shadow-md': status !== 'authenticated',
-      'w-full': status === 'authenticated'
-    }">
+  <div class="min-h-screen bg-gray-100 flex items-center justify-center">
+    <div class="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
       <div v-if="isLoading" class="text-center">
         <p class="text-lg">Loading...</p>
       </div>
-      <div v-else-if="status === 'authenticated'" class="w-full">
+      <div v-else-if="session" class="w-full">
         <BoardContainer />
       </div>
       <div v-else class="text-center">
