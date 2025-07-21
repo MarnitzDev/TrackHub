@@ -7,8 +7,20 @@ const isLoading = ref(true)
 const session = ref(null)
 
 onMounted(async () => {
-  session.value = await getSession()
-  isLoading.value = false
+  try {
+    const sessionData = await getSession()
+    if (typeof sessionData === 'object' && sessionData !== null) {
+      session.value = sessionData
+    } else {
+      console.error('Invalid session data:', sessionData)
+      session.value = null
+    }
+  } catch (error) {
+    console.error('Error fetching session:', error)
+    session.value = null
+  } finally {
+    isLoading.value = false
+  }
   console.log('Mounted - Session:', session.value, 'isLoading:', isLoading.value)
 })
 
@@ -31,10 +43,10 @@ const handleLogin = () => {
 <template>
   <div class="min-h-screen bg-gray-100 flex items-center justify-center">
     <div class="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-      <div v-if="isLoading" class="text-center">
+      <div v-if="status === 'loading'" class="text-center">
         <p class="text-lg">Loading...</p>
       </div>
-      <div v-else-if="session" class="w-full">
+      <div v-else-if="status === 'authenticated'" class="w-full">
         <BoardContainer />
       </div>
       <div v-else class="text-center">
@@ -48,7 +60,7 @@ const handleLogin = () => {
           Log In with Google
         </button>
         <p class="mt-4 text-sm text-gray-600">
-          Debug: isLoading: {{ isLoading }}, session: {{ !!session }}
+          Debug: status: {{ status }}
         </p>
       </div>
     </div>
