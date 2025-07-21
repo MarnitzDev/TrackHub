@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useBoardStore } from '~/stores/boardStore'
 import BoardCard from '~/components/Board/Item.vue'
 import CreateBoardModal from '~/components/Board/CreateBoardModal.vue'
 import EditBoardModal from '~/components/Board/EditBoardModal.vue'
+import { useAuth } from '#imports'
 
 // Store and Shared State
 // -----------------------------
 const boardStore = useBoardStore()
 const { boards, loading, error, editingBoard, isCreateModalOpen, isEditModalOpen } = storeToRefs(boardStore)
+const { status } = useAuth()
 
 //=============================================================================
 // Create Board Logic
@@ -50,17 +52,30 @@ const handleUpdateBoard = async (boardData) => {
   }
 }
 
+// Fetch Boards Logic
+// -----------------------------
+const fetchBoards = async () => {
+  if (status.value === 'authenticated') {
+    await boardStore.fetchBoards()
+  }
+}
+
 // Lifecycle Hooks
 // -----------------------------
-onMounted(() => boardStore.fetchBoards())
+onMounted(fetchBoards)
+watch(status, fetchBoards)
 </script>
 
 <template>
   <div class="container mx-auto px-4 py-8">
     <h2 class="text-3xl font-bold mb-6">Your Boards</h2>
 
-    <div v-if="loading" class="flex justify-center items-center h-64">
+    <div v-if="status === 'loading' || loading" class="flex justify-center items-center h-64">
       <p>Loading...</p>
+    </div>
+
+    <div v-else-if="status === 'unauthenticated'" class="text-center py-10">
+      <p class="text-xl text-gray-600">Please log in to view your boards.</p>
     </div>
 
     <div v-else-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">

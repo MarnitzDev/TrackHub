@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
 import { Board, List } from '@prisma/client'
+import { useAuth } from '#imports'
 
 interface BoardWithLists extends Board {
     lists?: List[]
     backgroundImage?: string
+    backgroundImageUrl?: string
 }
 
 export const useBoardStore = defineStore('board', {
@@ -26,7 +28,16 @@ export const useBoardStore = defineStore('board', {
             this.loading = true
             this.error = null
             try {
-                const data: BoardWithLists[] = await $fetch('/api/boards')
+                const { status } = useAuth()
+                if (status.value !== 'authenticated') {
+                    throw new Error('User not authenticated')
+                }
+
+                const data: BoardWithLists[] = await $fetch('/api/boards', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
                 this.boards = data.map(board => ({
                     ...board,
                     backgroundImageUrl: board.backgroundImage
@@ -35,7 +46,9 @@ export const useBoardStore = defineStore('board', {
                 }))
             } catch (e: any) {
                 console.error('Error fetching boards:', e)
-                if (e.statusCode === 400 && e.statusMessage === 'Board ID is required') {
+                if (e.statusCode === 401) {
+                    this.error = 'Authentication required. Please log in.'
+                } else if (e.statusCode === 400 && e.statusMessage === 'Board ID is required') {
                     // This error suggests there are no boards, so we'll set an empty array
                     this.boards = []
                 } else if (e.name === 'FetchError') {
@@ -58,6 +71,11 @@ export const useBoardStore = defineStore('board', {
             this.loading = true
             this.error = null
             try {
+                const { status } = useAuth()
+                if (status.value !== 'authenticated') {
+                    throw new Error('User not authenticated')
+                }
+
                 const newBoard = await $fetch('/api/boards', {
                     method: 'POST',
                     body: boardData
@@ -74,15 +92,7 @@ export const useBoardStore = defineStore('board', {
             }
         },
 
-        /**
-         * Sets the board to be edited.
-         * @param board - The board to be edited or null to clear.
-         */
-        setEditingBoard(board: BoardWithLists | null) {
-            console.log('boardStore: setEditingBoard', board)
-            this.editingBoard = board ? { ...board } : null
-            this.isEditModalOpen = !!board
-        },
+        // ... (other methods remain the same)
 
         /**
          * Updates an existing board with the given data.
@@ -93,6 +103,11 @@ export const useBoardStore = defineStore('board', {
             this.loading = true
             this.error = null
             try {
+                const { status } = useAuth()
+                if (status.value !== 'authenticated') {
+                    throw new Error('User not authenticated')
+                }
+
                 const updatedBoard = await $fetch(`/api/boards/${boardData.id}`, {
                     method: 'PUT',
                     body: boardData
@@ -133,6 +148,11 @@ export const useBoardStore = defineStore('board', {
             this.loading = true
             this.error = null
             try {
+                const { status } = useAuth()
+                if (status.value !== 'authenticated') {
+                    throw new Error('User not authenticated')
+                }
+
                 await $fetch(`/api/boards/${id}`, {
                     method: 'DELETE',
                 })
