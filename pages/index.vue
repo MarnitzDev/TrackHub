@@ -9,17 +9,21 @@ const session = ref(null)
 onMounted(async () => {
   session.value = await getSession()
   isLoading.value = false
+  console.log('Mounted - Session:', session.value, 'isLoading:', isLoading.value)
 })
 
 watch(status, async (newStatus) => {
+  console.log('Auth status changed:', newStatus)
   if (newStatus === 'authenticated') {
     session.value = await getSession()
   } else {
     session.value = null
   }
+  console.log('After status change - Session:', session.value)
 })
 
 const handleLogin = () => {
+  console.log('Login button clicked')
   signIn('google')
 }
 </script>
@@ -39,9 +43,13 @@ const handleLogin = () => {
         <button
             @click="handleLogin"
             class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition duration-300"
+            data-testid="login-button"
         >
           Log In with Google
         </button>
+        <p class="mt-4 text-sm text-gray-600">
+          Debug: isLoading: {{ isLoading }}, session: {{ !!session }}
+        </p>
       </div>
     </div>
   </div>
