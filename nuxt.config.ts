@@ -31,7 +31,8 @@ export default defineNuxtConfig({
     globalAppMiddleware: {
       isEnabled: true,
       allow404WithoutAuth: true,
-      addDefaultCallbackUrl: true
+      addDefaultCallbackUrl: true,
+      exclude: ['/signin']
     },
     origin: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   },

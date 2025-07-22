@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useAuth } from '#imports'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -23,11 +23,19 @@ const handleSignIn = async () => {
   }
 }
 
-onMounted(() => {
+const redirectIfAuthenticated = () => {
   if (status.value === 'authenticated') {
-    router.push(route.query.callbackUrl as string || '/')
+    const callbackUrl = route.query.callbackUrl as string
+    if (callbackUrl && !callbackUrl.includes('/signin')) {
+      router.push(callbackUrl)
+    } else {
+      router.push('/')
+    }
   }
-})
+}
+
+onMounted(redirectIfAuthenticated)
+watch(status, redirectIfAuthenticated)
 </script>
 
 <template>
