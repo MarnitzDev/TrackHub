@@ -24,17 +24,12 @@ export default defineNuxtConfig({
   },
   auth: {
     baseURL: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-    enableGlobalAppMiddleware: true,
     provider: {
-      type: 'authjs'
+      type: 'authjs',
+      trustHost: true,
+      defaultProvider: 'google',
+      addDefaultCallbackUrl: true
     },
-    globalAppMiddleware: {
-      isEnabled: true,
-      allow404WithoutAuth: true,
-      addDefaultCallbackUrl: true,
-      exclude: ['/signin']
-    },
-    origin: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   },
   runtimeConfig: {
     public: {
